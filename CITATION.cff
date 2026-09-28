@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use ChipQC Guardian, cite this software and the separate source dataset and paper."
+title: "ChipQC Guardian: Human-reviewed OoC brightfield image quality control"
+type: software
+authors:
+  - name: "ChipQC Guardian contributors"
+license: MIT
+abstract: >-
+  Research prototype for grouped, calibrated, human-reviewed quality control
+  of organ-on-a-chip brightfield images. Source data are separately cited and
+  are not covered by this software license.
+keywords:
+  - organ-on-a-chip
+  - brightfield microscopy
+  - quality control
+  - selective classification
+  - human review

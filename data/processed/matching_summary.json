@@ -1,0 +1,10 @@
+{
+  "source_image_count": 3072,
+  "metadata_record_count": 3072,
+  "matched_feature_count": 3072,
+  "status_counts": {
+    "matched": 3072
+  },
+  "image_source": "/Users/hudsonyu/Documents/Codex/2026-09-28/referenced-chatgpt-conversation-this-is-an-5/work/ai4s-chipqc/data/raw/OOC_image_dataset.zip",
+  "image_source_bytes": 6710767405
+}

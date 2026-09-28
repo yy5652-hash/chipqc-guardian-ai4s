@@ -1,0 +1,12 @@
+.git
+.venv
+__pycache__
+.pytest_cache
+.mypy_cache
+*.pyc
+data/
+artifacts/
+outputs/
+reports/figures/
+site/.sites-runtime/
+
