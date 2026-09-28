@@ -12,6 +12,10 @@ The 83-second [demonstration video](https://www.youtube.com/watch?v=QYr0GIJ8JRs)
 
 [GitHub: ChipQC Guardian AI4S](https://github.com/yy5652-hash/chipqc-guardian-ai4s). The repository offers browsable source code, evaluation records, the [exact frozen group split](https://github.com/yy5652-hash/chipqc-guardian-ai4s/blob/main/reports/frozen_split_groups.json), and a downloadable source package; third-party raw images are excluded.
 
+## Public browser demo
+
+[Open the browser-only quality-rule preview](https://chipqc-guardian-ai4s.hudsonyuy.chatgpt.site). It runs four transparent image descriptors in the visitor's browser and labels its PASS/REVIEW/REACQUIRE output as an **unvalidated workflow preview**. The trained research model is not served by this page; its measurements come from the separate frozen internal evaluation and local Streamlit application. The preview sends no uploaded image to a server.
+
 ## Project summary (approximately 230 words)
 
 Organ-on-a-chip (OoC) experiments generate brightfield images that researchers inspect to judge whether a culture is suitable for further analysis. ChipQC Guardian explores a more transparent quality-control workflow: it presents the original image, an interpretable quality estimate, and an explicit suggestion to PASS, REVIEW, or REACQUIRE. Researchers remain responsible for the final choice. The source's expert `good`/`bad` labels describe sample quality; a poor sample is not automatically fixed by taking another photograph, so a re-acquisition suggestion requires separate evidence of an unusable image or a human decision.
@@ -46,7 +50,7 @@ Browse the [public source repository](https://github.com/yy5652-hash/chipqc-guar
 
 ## Links and references
 
-- Interactive demo: local Streamlit prototype; no public model-backed deployment is claimed yet.
+- Interactive demo: [public browser-only rule preview](https://chipqc-guardian-ai4s.hudsonyuy.chatgpt.site); the trained model runs only in the local Streamlit prototype, so no public model-backed deployment is claimed.
 - Dataset: [Movčana et al., Zenodo 10.5281/zenodo.10203721](https://doi.org/10.5281/zenodo.10203721)
 - Dataset paper: [Movčana et al., *Data* 9(2), 28 (2024)](https://doi.org/10.3390/data9020028)
 - Challenge: [AI4S Open Innovation: AI for Life Science](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/overview/description)
