@@ -6,11 +6,11 @@
 
 ## Demo video
 
-Video preparation is in progress; a public YouTube link will be added before submission.
+The 83-second [demonstration video](https://www.youtube.com/watch?v=QYr0GIJ8JRs) shows the research workflow, synthetic interface examples, and internally measured held-out results. It is uploaded but remains private while YouTube's copyright check is ongoing; this Writeup will not be submitted until public playback is verified.
 
 ## Public code repository
 
-[GitHub: ChipQC Guardian AI4S](https://github.com/yy5652-hash/chipqc-guardian-ai4s). The repository currently offers a browsable README and a downloadable source package; third-party raw images are excluded.
+[GitHub: ChipQC Guardian AI4S](https://github.com/yy5652-hash/chipqc-guardian-ai4s). The repository offers browsable source code, evaluation records, the [exact frozen group split](https://github.com/yy5652-hash/chipqc-guardian-ai4s/blob/main/reports/frozen_split_groups.json), and a downloadable source package; third-party raw images are excluded.
 
 ## Project summary (approximately 230 words)
 
@@ -42,7 +42,7 @@ No calibration threshold accepted at least 20 images with ≤10% observed error.
 
 ## Reproduce and inspect
 
-Download the [public source package](https://github.com/yy5652-hash/chipqc-guardian-ai4s/blob/main/ChipQC_Guardian_Source_DRAFT.zip), install `requirements.txt` and `requirements-vision.txt`, obtain the source data from Zenodo, and run `audit_metadata.py`, `prepare_dataset.py`, `train_baseline.py`, `extract_embeddings.py`, `train_vision_model.py`, and `evaluate.py`. Start the interface with `streamlit run app.py`. The package contains the split manifest, protocols, model/data cards, and evaluation outputs, but no third-party raw images. The [technical report PDF](https://github.com/yy5652-hash/chipqc-guardian-ai4s/blob/main/ChipQC_Guardian_Technical_Report_DRAFT.pdf) explains limits and measurements. This is not yet a verified fresh-install reproduction.
+Browse the [public source repository](https://github.com/yy5652-hash/chipqc-guardian-ai4s) or download its source package, install `requirements.txt` and `requirements-vision.txt`, obtain the source data from Zenodo, and run `audit_metadata.py`, `prepare_dataset.py`, `train_baseline.py`, `extract_embeddings.py`, `train_vision_model.py`, and `evaluate.py`. Start the interface with `streamlit run app.py`. The package contains the image manifest and evaluation outputs; the repository also includes the [frozen split groups](https://github.com/yy5652-hash/chipqc-guardian-ai4s/blob/main/reports/frozen_split_groups.json), protocols, and model/data cards. Neither distribution includes third-party raw images. The [final technical report PDF](https://github.com/yy5652-hash/chipqc-guardian-ai4s/blob/main/ChipQC_Guardian_Technical_Report.pdf) explains limits and measurements. This is not yet a verified fresh-install reproduction.
 
 ## Links and references
 
