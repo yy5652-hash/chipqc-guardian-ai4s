@@ -4,6 +4,8 @@ ChipQC Guardian is a research prototype for human-reviewed quality control of br
 
 The project targets the [AI4S Open Innovation: AI for Life Science](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/overview/description) challenge in the **End-to-End System** category. Kaggle rules are accepted, the extra organizer registration form has confirmed receipt, and a Writeup draft exists. The final Writeup has not been submitted.
 
+The [public browser demo](https://chipqc-guardian-ai4s.hudsonyuy.chatgpt.site) is a transparent, browser-only acquisition-rule preview. It does not execute the trained research model or upload visitor images to a server; the model-backed Streamlit application currently runs locally.
+
 ## What the system is designed to show
 
 1. An operator uploads one or more brightfield images. The current page displays the original image, simple clarity/brightness/contrast/clipping descriptors, and explicit reasons for its rule preview; source metadata stay in the audit files.
