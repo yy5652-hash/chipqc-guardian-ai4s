@@ -29,7 +29,7 @@ The missing counts are 344 for density, 2,244 for elapsed hours, and 859 for flo
 | NHBE | 138 |
 | HUVEC | 107 |
 
-The `CACO` code is the spreadsheet spelling; the Zenodo description calls the cell line Caco-2. Preserve the raw code and document any display-name normalization. The numeric labels are `1`: 1,727 rows and `2`: 1,345 rows. Their direction was cross-checked against the official Zenodo archive preview: `test/good/A549/0-1_days/221010_82.png` has spreadsheet label `1`, while `test/bad/A549/4+_days/230529_207.png` has label `2`. This establishes the working mapping `1 = good`, `2 = bad` from observed source examples, not from the ambiguous column heading. A complete row-to-path consistency audit remains required.
+The `CACO` code is the spreadsheet spelling; the Zenodo description calls the cell line Caco-2. Preserve the raw code and document any display-name normalization. The numeric labels are `1`: 1,727 rows and `2`: 1,345 rows. Their direction was cross-checked against the official Zenodo archive preview: `test/good/A549/0-1_days/221010_82.png` has spreadsheet label `1`, while `test/bad/A549/4+_days/230529_207.png` has label `2`. The subsequent complete row-to-path audit matched all 3,072 rows with no label conflict, confirming the working mapping `1 = good`, `2 = bad` for this archive.
 
 All 3,072 image IDs are unique and match a six-digit prefix, underscore, and sequence number. There are 59 unique six-digit prefixes, with group sizes from 6 to 229 rows; 45 prefixes contain both numeric labels. We treat the prefix as a conservative acquisition-date-like grouping key. It is an inferred key from filenames, not independently verified chip, donor, experiment, or biological replicate identity.
 

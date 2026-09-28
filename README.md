@@ -55,6 +55,7 @@ Report both discrimination and workflow behavior: per-class precision/recall, ba
 | [reports/kaggle_writeup.md](reports/kaggle_writeup.md) | Kaggle Writeup copy and required links |
 | [reports/demo_video_script_zh.md](reports/demo_video_script_zh.md) | Up-to-five-minute Chinese video storyboard |
 | [reports/experiment_protocol.md](reports/experiment_protocol.md) | Frozen evaluation and reproducibility checklist |
+| [reports/frozen_split_groups.json](reports/frozen_split_groups.json) | Exact 35/12/12 held-out prefix partition |
 | [reports/rubric_self_score.md](reports/rubric_self_score.md) | Evidence-based rubric audit, not an official score |
 
 ## Rights and citation

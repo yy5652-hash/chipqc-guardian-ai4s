@@ -1,9 +1,9 @@
 # ChipQC Guardian: Group-aware, human-reviewed quality control for organ-on-a-chip brightfield images
 
 **Submission category:** End-to-End System  
-**Report status:** Working manuscript with verified internal grouped-test results. Public repository, public video, final competition form, and external validation remain pending.  
+**Evidence status:** Verified source audit and frozen internal grouped-test results. The public repository and extra organizer registration are complete; Kaggle Writeup submission and external validation remain separate.  
 **Team:** Yi Yu, New York University  
-**Date:** 2026-09-28 (draft)
+**Date:** 2026-09-28
 
 ## Abstract
 
@@ -27,13 +27,13 @@ The source [data descriptor](https://doi.org/10.3390/data9020028) reports a Mobi
 4. Which samples need REVIEW, and can an independent acquisition-quality check identify images that genuinely merit REACQUIRE?
 5. How much of any predictive signal comes from image content rather than cell line, acquisition context, or missing metadata?
 
-These questions are deliberately measurable. Answers require the final grouped-test outputs and, for time savings, a future prospective workflow study.
+These questions are deliberately measurable. The grouped internal test addresses discrimination and calibration only within this source collection. Safe automatic PASS, true re-acquisition benefit, and time savings require additional evidence; the latter two need prospective review.
 
 ## 2. Source dataset and provenance
 
 The [Organ-on-a-Chip (OOC) Image Dataset](https://doi.org/10.5281/zenodo.10203721) contains automated brightfield images of cells grown in OoC devices. Its associated spreadsheet supplies image IDs, cell type, seeding density, elapsed hours after seeding when present, a day field, an expert quality decision, and flow rate when present. The data descriptor identifies A549, Caco-2, HPMEC, HUVEC, NHBE, and HSAEC cell lines and states that a cell-biology expert assigned `good` or `bad` quality labels. This is a sample-quality task with possible acquisition artifacts, not a directly labeled image-retake task.
 
-The local sheet `OOC_datasheet.xlsx` contains 3,072 rows with non-empty, unique image IDs. Its source column `Decision 1/2 (good/bad)` encodes 1,727 rows as `1` and 1,345 as `2`. The heading alone does not specify which number has which meaning. We cross-checked two official archive-preview paths against the sheet: `221010_82.png` under `test/good/A549/0-1_days` has decision `1`; `230529_207.png` under `test/bad/A549/4+_days` has decision `2`. Accordingly, the working source mapping is `1 = good`, `2 = bad`. This is a sample-verified mapping. A full one-to-one image-path join must confirm all rows before any trained release.
+The local sheet `OOC_datasheet.xlsx` contains 3,072 rows with non-empty, unique image IDs. Its source column `Decision 1/2 (good/bad)` encodes 1,727 rows as `1` and 1,345 as `2`. The heading alone does not specify which number has which meaning. We cross-checked two official archive-preview paths against the sheet: `221010_82.png` under `test/good/A549/0-1_days` has decision `1`; `230529_207.png` under `test/bad/A549/4+_days` has decision `2`. A subsequent full one-to-one image-path join confirmed all 3,072 rows with no path-label conflict. The resulting source mapping is `1 = good`, `2 = bad` for this archive.
 
 ### 2.1 Dataset profile
 
@@ -94,7 +94,7 @@ The desired workflow keeps the original image and a short reason next to every s
 
 ## 4. Leakage-aware experiment design
 
-The primary test of generalization uses the first six characters of `imageID` as a date-like group key. All images sharing a prefix must stay in the same train, calibration, or test set. The current implementation searches deterministic GroupShuffleSplit candidates to approximate a 60/20/20 image allocation while maintaining both labels and reasonable cell-line balance; the actual group and image counts are recorded after the complete archive is prepared. This is a stronger independence barrier than random images, but the prefix does not prove separate chips, donors, or experiments. If stronger provenance becomes available, the analysis should group by the strongest shared source.
+The primary test of generalization uses the first six characters of `imageID` as a date-like group key. All images sharing a prefix stay in the same train, calibration, or test set. The implementation searches deterministic GroupShuffleSplit candidates to approximate a 60/20/20 image allocation while maintaining both labels and reasonable cell-line balance. The frozen manifest has 35/12/12 groups and 1,804/598/670 images in train/calibration/test. This is a stronger independence barrier than random images, but the prefix does not prove separate chips, donors, or experiments. If stronger provenance becomes available, the analysis should group by the strongest shared source.
 
 Preprocessing fit only on training groups. Calibration fit only on calibration groups. The test set remains closed during model and policy selection. A source directory named `train`, `val`, or `test` is recorded but does not override this primary grouping. The split-search algorithm uses labels and cell-line composition for partition balance, not image features or model outcomes; the report should disclose this design choice. Every released experiment must include a split manifest and hash, and assert that image IDs and prefixes do not cross partitions. Exact and perceptual duplicate checks add another leakage barrier.
 
@@ -132,14 +132,11 @@ The selected model's point estimates improve materially over both lower referenc
 
 The planned automated-PASS condition was not met: no calibration threshold accepted at least 20 images while keeping accepted error at or below 10%. Consequently, the current release has no validated automatic PASS coverage or false-PASS guarantee. The interface displays the research score and keeps the final decision with a human; the acquisition-quality REACQUIRE heuristic remains separate and unvalidated.
 
-### 5.2 Figures and case evidence to insert
+### 5.2 Case evidence and what is withheld
 
-1. **Data audit:** class and cell-line distributions with group counts and missingness. Caption source and distinguish rows from decoded images.
-2. **Split audit:** 59-prefix size distribution and a train/calibration/test balance table. Caption the grouping limitation.
-3. **Discrimination and calibration:** confusion matrix, ROC/precision-recall curves if estimable, and reliability diagram; cite checkpoint and manifest hash.
-4. **Selective policy:** PASS coverage versus false PASS exposure, with validation-selected threshold and held-out estimate marked separately.
-5. **Failure cases:** consent/right-checked examples of false PASS, false REVIEW, and acquisition-quality issues, with image ID, source label, suggestion, and human interpretation.
-6. **Interface:** one full screenshot showing image, score provenance, action reason, and model-unavailable behavior. Label any unvalidated heuristic.
+The public package includes the frozen manifest, evaluation JSON, and deterministic synthetic UI examples. The latter demonstrate software behavior only: an 8-by-8 checker receives a rule-preview PASS, while a flat 8-by-8 image triggers a REACQUIRE preview because clarity and contrast are low. Neither is a biological specimen or a validation case for the sample-quality classifier. The model may label the flat synthetic input `good` while the acquisition rule advises re-imaging; that disagreement is intentionally displayed and shows why the decision layers must not be conflated.
+
+This report does not reproduce third-party raw images or present selected errors as representative case studies without a rights check and expert interpretation. It also does not draw a precision-recall or reliability curve from summary metrics alone. Those figures require the frozen per-image probability outputs and should be added only after independent reproduction. The reported confusion matrix and grouped intervals are directly available in `vision_evaluation.json` and are not inferred from a stylized diagram.
 
 ## 6. What this system can and cannot establish
 
@@ -184,8 +181,47 @@ The present contribution is a reproducible and falsifiable workflow: explicit so
 | Trained model performance | Frozen 12-group test: 0.712 balanced accuracy, 0.772 AUROC | External dataset and independent rerun still needed |
 | Calibrated safe PASS threshold | Independent calibration design; current demo default is not safety-validated | Validation-set threshold selection and held-out false PASS interval |
 | REACQUIRE is appropriate | UI acquisition-quality rule is illustrative | Dedicated acquisition-quality labels or expert review study |
-| Public reproducibility | Commands and material list | Public repository plus fresh-install test |
+| Public reproducibility | Public GitHub repository with source files, downloadable package, commands and material list | Fresh-install test still required |
 | Competition participation | Kaggle team joined and rules accepted; extra organizer form confirmed received; Writeup saved as draft | Final Writeup submission still required |
+
+## Appendix A. Frozen split and candidate selection details
+
+The three partitions contain 35 training prefixes and 1,804 images, 12 calibration prefixes and 598 images, and 12 test prefixes and 670 images. The prefix is the first six characters of the spreadsheet image ID; the public `reports/frozen_split_groups.json` fixes the exact partition of all 59 prefixes, and the image manifest maps IDs to prefixes. This is an acquisition-date-like proxy, not proof of distinct biological replicates. The selection metric sums calibration balanced accuracy at a 0.5 score threshold and calibration AUROC; the threshold of 0.62 was selected after candidate ranking, using calibration groups only. The following table comes directly from the saved `vision_evaluation.json` artifact.
+
+| ExtraTrees `max_features` | Calibration balanced accuracy at 0.5 | Calibration AUROC | Selection score |
+| --- | ---: | ---: | ---: |
+| `sqrt` | 0.635 | 0.692 | 1.327 |
+| `0.2` | 0.650 | 0.702 | 1.352 |
+| `0.5` (selected) | 0.667 | 0.704 | 1.371 |
+
+Candidate ranking used the same frozen backbone and train/calibration split. This small search does not establish that the selected hyperparameter is globally optimal; it reduces but does not eliminate selection bias. The test partition was evaluated only after selecting the candidate and threshold. The 0.62 threshold controls the reported binary classification metrics, not the human-facing PASS policy. A valid automatic PASS policy would require a separately precommitted calibration target and a held-out estimate with uncertainty.
+
+The calibration partition has 381 good and 217 bad images. At threshold 0.62, its accuracy was 0.674, balanced accuracy 0.664, AUROC 0.704, and Brier score 0.205. The test partition has 357 good and 313 bad images; its accuracy was 0.718, balanced accuracy 0.712, AUROC 0.772, and Brier score 0.204. Different class mixtures and only 12 independent prefixes per partition limit interpretation of these differences. No improvement claim between calibration and test is made.
+
+## Appendix B. Cell-line slices and failure exposure
+
+Cell-line values below are internal test descriptors, not external validation. A high value on a tiny or one-sided slice can be much less informative than a lower value on a larger one. Good is the positive class; `bad called good` is the number of bad-labeled samples classified as good at the frozen 0.62 research threshold.
+
+| Cell line | Test images | Good / bad | Balanced accuracy | AUROC | Bad called good |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| A549 | 173 | 115 / 58 | 0.551 | 0.613 | 40 |
+| CACO | 118 | 28 / 90 | 0.848 | 0.953 | 21 |
+| HPMEC | 286 | 184 / 102 | 0.672 | 0.713 | 47 |
+| HSAEC | 28 | 27 / 1 | 0.370 | 0.741 | 1 |
+| HUVEC | 56 | 3 / 53 | 0.981 | 0.987 | 2 |
+| NHBE | 9 | 0 / 9 | Not estimable | Not estimable | Not promoted |
+
+The overall test confusion matrix is `[[193,120],[69,288]]`, with rows actual bad/good and columns predicted bad/good. Thus 120 of 313 bad-labeled images (38.3%) were classified as good at the research threshold. Among the 408 images classified good, 120 (29.4%) were bad-labeled. These are two different denominators and neither is an operational false-PASS rate, because the released interface does not automatically PASS based on the classifier. They make the decision to retain human review concrete rather than merely cautious prose.
+
+The A549 slice accounts for 40 bad-called-good images out of its 58 bad-labeled images, so a single overall score would hide a material weakness. HSAEC has only one bad test image and the model missed it; a cell-line AUROC or balanced accuracy here is highly unstable. HUVEC has only three good test images, so its apparently strong balanced accuracy must not be extrapolated to another lab. NHBE has only one class in the held-out test, making class-balanced metrics undefined. These limits should direct the next data-collection and evaluation cycle.
+
+## Appendix C. Reproduction and claim audit
+
+The public source package contains the README, pinned requirements, preprocessing and training scripts, frozen manifest, model and data cards, test scripts, evaluation JSON, and demo application. Raw third-party images are excluded. Reproduction starts by obtaining the exact Zenodo files and checking the published archive MD5. The spreadsheet and archive must then pass the one-to-one row/image/label join; the matching summary should report 3,072 successes, zero unmatched rows, zero ambiguous IDs, zero path-label conflicts, and zero decode failures. A run on fewer images is a subset experiment even if its score is numerically higher.
+
+Next, the runner confirms that no six-digit prefix occurs in more than one partition. Feature preprocessing and model fitting use training groups only; candidate ranking and probability calibration use calibration groups only. The chosen threshold and artifact versions are frozen before the test command. Reported test metrics are then compared against the saved `vision_evaluation.json` values and per-line counts, with a tolerance justified by software and hardware determinism. A fresh environment has not yet completed this full rerun, so the package is inspectable but not independently reproduced.
+
+Claim categories should remain distinct: (1) observed source integrity; (2) internal model performance under a proxy grouping; (3) interactive software behavior on synthetic inputs; (4) untested operational benefit. Only the first three have direct evidence here, and the third does not imply biological validity. Time saved, reduced expert error, external transfer, safe automatic acceptance, and the benefit of another image capture remain hypotheses. The precise next experiment is a prospective, blinded operator study with expert adjudication and a new acquisition domain, not another random split of the same archive.
 
 ## References
 
@@ -193,7 +229,3 @@ The present contribution is a reproducible and falsifiable workflow: explicit so
 2. Movčana, V. et al. *Organ-on-a-Chip (OOC) Image Dataset*. Zenodo, 2023. [https://doi.org/10.5281/zenodo.10203721](https://doi.org/10.5281/zenodo.10203721).
 3. 5th Pazhou Algorithm Competition Organizing Committee. *AI4S Open Innovation: AI for Life Science*. Kaggle, 2026. [Competition description](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/overview/description).
 4. Pazhou Algorithm Competition. *Participation Guidelines*. [Official rules](https://www.aicompetition-pz.com/guidelines), accessed 2026-09-28.
-
-## Report production notes (remove from submitted PDF)
-
-This manuscript is structured for a self-contained **15–20-page PDF** after figures and verified results are inserted: title/abstract (1 page); problem and source (2–3); data audit and rights (2); system and method (3–4); grouped protocol (2–3); results and case studies (3–4); limitations, impact, reproducibility, and references (2–3). Keep every figure legible and include source, partition, and model version in captions. The final PDF should remove all bracketed placeholders and this production note. The Kaggle Writeup must link to the final public PDF or include its full technical content directly.
