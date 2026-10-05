@@ -1,65 +1,93 @@
 # ChipQC Guardian
 
-ChipQC Guardian is a research prototype for human-reviewed quality control of brightfield images from organ-on-a-chip (OoC) experiments. The current Streamlit page shows image acquisition descriptors and an **unvalidated rule preview** labeled PASS, REVIEW, or REACQUIRE; if a compatible trained artifact exists, it shows the model's quality estimate separately. These suggestions do not replace a biologist's judgment. In particular, the source dataset's `good`/`bad` labels describe expert-assessed sample quality; a `bad` sample is not automatically an image that can be fixed by taking another photograph.
+**An auditable quality gate for organ-on-a-chip brightfield imaging.** Entry for [AI4S Open Innovation: AI for Life Science](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien) (category: End-to-End System).
 
-The project targets the [AI4S Open Innovation: AI for Life Science](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/overview/description) challenge in the **End-to-End System** category. Kaggle rules are accepted, the extra organizer registration form has confirmed receipt, and a Writeup draft exists. The final Writeup has not been submitted.
+Before an organ-on-a-chip culture is dosed, stained or measured, someone looks at brightfield frames and decides whether the culture is usable. ChipQC Guardian turns that look into a logged, checkable step. Every frame gets one of three outcomes, with the evidence behind it:
 
-The [public browser demo](https://chipqc-guardian-ai4s.hudsonyuy.chatgpt.site) is a transparent, browser-only acquisition-rule preview. It does not execute the trained research model or upload visitor images to a server; the model-backed Streamlit application currently runs locally.
+| Outcome | Meaning | How it is decided |
+|---|---|---|
+| **PASS** | use the frame without a person looking | calibrated P(good) above a threshold fitted to keep the share of bad frames among passed frames under a target you choose |
+| **REACQUIRE** | not a usable observation: image it again | five physical descriptors (blacked-out area, motion streak, defocus, exposure) |
+| **REVIEW** | a person decides | everything else, queued most suspicious first, with an exact evidence map |
 
-## What the system is designed to show
+![Frames from acquisition dates the scoring model never saw. Blue pulls the score towards good, red towards bad; each map averages exactly to the frame's score.](reports/figures/fig_evidence.jpg)
 
-1. An operator uploads one or more brightfield images. The current page displays the original image, simple clarity/brightness/contrast/clipping descriptors, and explicit reasons for its rule preview; source metadata stay in the audit files.
-2. If a compatible trained artifact is present, the page separately displays its `good`/`bad` estimate and probability. No model score is shown when no artifact is available.
-3. The target operating policy would present PASS only at a validated acceptance threshold, REVIEW for ambiguity or unsupported conditions, and REACQUIRE for a separately supported acquisition-quality issue or a reviewer-confirmed need to re-image. The current rule thresholds and model confidence cutoff are demonstration settings without that validation.
-4. A researcher reviews the suggestion. The current page exports a machine-generated CSV/JSON manifest; persistent logging of a human final decision is future work. No clinical, drug-efficacy, or tissue-viability conclusion is inferred from the image alone.
+**[Try it in your browser](https://yy5652-hash.github.io/chipqc-guardian-ai4s/)** (the model runs on your machine; nothing is uploaded) · [Technical report (PDF)](ChipQC_Guardian_Technical_Report.pdf) · [Kaggle writeup](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/writeups/chipqc-guardian-reliable-ooc-image-quality-review) · [model card](MODEL_CARD.md) · [data card](DATA_CARD.md)
 
-The decision thresholds are operational choices, not biological ground truth. The selected classifier threshold is `0.62`, chosen on calibration groups for balanced accuracy. No calibration threshold met the planned automatic-PASS target of at least 20 accepted images with ≤10% observed error, so operational acceptance remains human-controlled.
+## Results
 
-## Data and evidence status
+Measured on the public [Organ-on-a-Chip Image Dataset](https://doi.org/10.5281/zenodo.10203721) (3,072 frames, six cell lines, 59 acquisition dates). **Whole acquisition dates are held out**: frames from one date are not independent, so a random split flatters any model. Regularisation, calibration and thresholds are chosen inside the training dates; intervals resample dates.
 
-The source is the public [Organ-on-a-Chip (OOC) Image Dataset](https://zenodo.org/records/10203721), described by [Movčana et al. (2024)](https://doi.org/10.3390/data9020028). Its spreadsheet has **3,072 non-empty image IDs**, six cell lines, and numeric quality labels `1` (1,727 rows) and `2` (1,345 rows). The 6.7 GB archive matched upstream MD5 `8f7e058996203d48eb03b2d86c0a2e4d`, and all 3,072 rows matched one decodable image with a consistent `1 = good`, `2 = bad` path label.
+| | |
+|---|---|
+| AUROC, dates held out | **0.852** (95 % interval 0.821–0.883) |
+| Same protocol, 224 px centre crop (our first submission) | 0.738 |
+| Frozen 12-date test split of our first submission (first submission: 0.772) | 0.859 |
+| Accuracy on the dataset authors' own split (published baseline 0.81) | 0.86 |
+| Cell line withheld from training: largest AUROC change over six lines | 0.02 |
+| Different camera, no local labels: AUROC | 0.71 and 0.74 (same camera: 0.79 and 0.84) |
+| At a 10 % target: passed automatically / bad among passed | 18 % / 8.6 % |
+| At a 20 % target: passed automatically / bad among passed | 47 % / 17.1 % |
+| Sent back for re-acquisition / of those, labelled bad by experts | 15 % / 66 % |
+| Seconds per frame, laptop GPU / CPU | 0.14 / 0.43 |
 
-On the frozen 12-group, 670-image test set, the selected MobileNetV2-embedding + ExtraTrees model achieved **0.718 accuracy, 0.712 balanced accuracy, 0.712 macro-F1, 0.772 AUROC, and 0.204 Brier score**. Complete-group bootstrap intervals are wide, so these are internal evidence—not external or clinical validation. The paper's figures use a different protocol and are not project results.
+Two things the data do **not** support, and the system therefore does not do: automatic rejection (at a 10 % target, 23 % of the frames it would discard were good) and a 5 % pass target. Both are reported in the [technical report](ChipQC_Guardian_Technical_Report.pdf), sections 5.4 and 6.
 
-## Reproduce the workflow
+![AUROC on held-out dates for each representation.](reports/figures/fig_representations.png)
 
-Use Python 3 in a fresh virtual environment and install the pinned dependencies when `requirements.txt` is available. Keep the upstream raw files under `data/raw/`; do not commit images or copy them into a public demo without checking the dataset record and contest usage terms.
+## Try it
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python scripts/audit_metadata.py
-python scripts/prepare_dataset.py
-python scripts/train_baseline.py
-python scripts/evaluate.py
-python -m pip install -r requirements-vision.txt
-python scripts/extract_embeddings.py
-python scripts/train_vision_model.py
-streamlit run app.py
+git clone https://github.com/yy5652-hash/chipqc-guardian-ai4s && cd chipqc-guardian-ai4s
+python -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt
+
+python inference.py examples/        # nine real frames from two dates the demo model never saw
+streamlit run app.py                 # the review console
 ```
 
-The scripts should record their input paths, seed, split IDs, label mapping evidence, model artifact, and output location. Check `data/processed/matching_summary.json` before training or publishing a result; the current preparation code can export a matched subset if the image directory is incomplete. A result on such a subset must be named as a subset experiment, never as the full 3,072-image dataset. Run `python <script> --help` for script-specific options. The exact frozen run command, software versions, dataset checksums, and measured outputs belong in [the experiment protocol](reports/experiment_protocol.md) and [technical report](reports/technical_report.md).
+`inference.py` writes `chipqc_out/audit.csv`, `audit.json` and one evidence-map picture per frame. Point it at your own folder with `python inference.py /path/to/run --target 0.1`. The backbone weights (88 MB, Apache-2.0) are downloaded once from the Hugging Face hub by `timm`; if the hub is not reachable from your network, point `HF_ENDPOINT` at a mirror before the first run. `evaluate.py` and the browser demo need no download at all. Nothing you score leaves your machine.
 
-## Evaluation design
+![The review console.](reports/figures/console_overview.png)
 
-The filename prefix before `_` is a six-digit acquisition-date-like group key. There are 59 distinct prefixes in the source sheet. All images with one prefix stay in one of train, validation, or test, reducing leakage from near-related acquisitions. The source archive's own `train`/`val`/`test` directories are not automatically an acceptable independence test for this project. Freeze a split manifest and confirm no image ID, exact duplicate, or date prefix crosses partitions before fitting preprocessing, calibration, or thresholds.
+The [browser demo](https://yy5652-hash.github.io/chipqc-guardian-ai4s/) (`docs/`) runs the same pipeline with ONNX Runtime Web: a JavaScript port of the frame reading and acquisition descriptors that matches the Python code (Pillow-compatible resampling), and the backbone, classifier and calibrator exported as one ONNX graph. On the bundled frames its P(good) differs from the Python reference by at most 0.000001 (`python scripts/check_web_demo.py`).
 
-Report both discrimination and workflow behavior: per-class precision/recall, balanced accuracy and AUROC where defined, Brier score and reliability plot, PASS false-accept rate, REVIEW coverage, and performance by cell line. Include uncertainty intervals based on grouped resampling. Compare against simple metadata-only and image-only baselines under the same split. [MODEL_CARD.md](MODEL_CARD.md) and [reports/experiment_protocol.md](reports/experiment_protocol.md) define the intended tests.
+## Reproduce
 
-## Project materials
+```bash
+python evaluate.py                   # every reported number, from the released features: 2 minutes on a CPU
+python scripts/make_figures.py       # every chart
+python scripts/build_report.py       # the report, README and model card, filled from results/*.json
+pytest -q                            # the unit tests
+```
 
-| File | Purpose |
-| --- | --- |
-| [DATA_CARD.md](DATA_CARD.md) | Source, fields, missingness, rights, leakage risks |
-| [MODEL_CARD.md](MODEL_CARD.md) | Intended use, decision logic, risks, and performance status |
-| [reports/technical_report.md](reports/technical_report.md) | Detailed report manuscript and result slots |
-| [reports/kaggle_writeup.md](reports/kaggle_writeup.md) | Kaggle Writeup copy and required links |
-| [reports/demo_video_script_zh.md](reports/demo_video_script_zh.md) | Up-to-five-minute Chinese video storyboard |
-| [reports/experiment_protocol.md](reports/experiment_protocol.md) | Frozen evaluation and reproducibility checklist |
-| [reports/frozen_split_groups.json](reports/frozen_split_groups.json) | Exact 35/12/12 held-out prefix partition |
-| [reports/rubric_self_score.md](reports/rubric_self_score.md) | Evidence-based rubric audit, not an official score |
+`evaluate.py` needs no images: `features/` holds the embeddings of all 3,072 frames for every representation in the comparison, and the acquisition descriptors. To rebuild those from the raw data (6.7 GB download, about 15 minutes on a laptop GPU):
 
-## Rights and citation
+```bash
+bash scripts/reproduce_from_images.sh
+```
 
-Project-authored source code and documentation are covered by [LICENSE](LICENSE). The original OoC images and spreadsheet are third-party material and are **not** relicensed by this repository. Cite the [dataset DOI](https://doi.org/10.5281/zenodo.10203721) and the [data descriptor DOI](https://doi.org/10.3390/data9020028) when using them. Follow the current [competition participation guidelines](https://www.aicompetition-pz.com/guidelines) and the source record's rights information before distributing raw data, thumbnails, or trained weights. The confirmed external registration does not by itself submit the Kaggle Writeup.
+## What is in the repository
+
+| Path | Contents |
+|---|---|
+| `src/chipqc/` | the package: frame reading, backbone, acquisition descriptors, evaluation protocol, decision rule, the assembled `Guardian`, rendering (602 lines) |
+| `inference.py`, `app.py`, `evaluate.py` | entry points: score frames, review console, all experiments |
+| `models/guardian-v2/` | the released model: `model.json` (weights, calibrator, thresholds, limits, evaluation summary) and reference embeddings with thumbnails |
+| `models/guardian-v2-demo/` | the same recipe fitted without dates 230524 and 230425, used for the bundled examples |
+| `features/` | embeddings of every frame for each representation, acquisition descriptors, camera format |
+| `results/` | one JSON file per analysis; the report quotes these files |
+| `reports/figures/` | every figure |
+| `examples/` | nine frames of the reference dataset (CC BY 4.0) |
+| `docs/` | the static browser demo (GitHub Pages): page, JavaScript port, ONNX model, bundled frames, and ONNX Runtime Web in `docs/vendor/`, so the page contacts no other server |
+| `scripts/` | data preparation, training, studies, figures, report |
+
+## Scope and limits
+
+- The score estimates what cell-biology experts called a good or bad culture in one laboratory's dataset. It is not a measurement of viability, barrier function or drug response, and it is not for clinical or regulatory decisions.
+- A new microscope or camera needs local reference frames: without them AUROC drops by about ten points. Run in review-only mode first; the report gives the labelling cost of repairing it.
+- Thresholds met their targets on held-out dates of this dataset. That is evidence, not a guarantee; re-check after any change of instrument, protocol or cell line.
+
+## Data, licences and citation
+
+Code: MIT ([LICENSE](LICENSE)). Reference data: Movčana V. et al., *Organ-on-a-Chip (OOC) Image Dataset*, Zenodo, [doi:10.5281/zenodo.10203721](https://doi.org/10.5281/zenodo.10203721), CC BY 4.0, described in *Data* 9(2), 28 (2024). This repository redistributes only derived features, 144 px thumbnails and nine example frames, with attribution. Backbone: DINOv2 ViT-S/14 with registers (Meta AI), Apache-2.0. The browser demo ships ONNX Runtime Web (Microsoft, MIT) unmodified in `docs/vendor/`. See [CITATION.cff](CITATION.cff).

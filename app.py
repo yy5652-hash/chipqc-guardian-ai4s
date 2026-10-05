@@ -1,216 +1,154 @@
-"""ChipQC Guardian: a non-clinical, pre-model image QC demonstration."""
+"""ChipQC Guardian review console.
 
+    streamlit run app.py
+
+Upload brightfield frames from an organ-on-a-chip run (or open the bundled examples). Each frame gets one of
+three outcomes: PASS, REVIEW or REACQUIRE, with the evidence behind it. Nothing leaves your machine.
+"""
 from __future__ import annotations
 
+import hashlib
 import io
+import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
+import pandas as pd
 import streamlit as st
-from PIL import Image, ImageOps, UnidentifiedImageError
+from PIL import Image, ImageOps
+
+ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "src"))
+from chipqc.guardian import PASS, REACQUIRE, REVIEW, Guardian  # noqa: E402
+from chipqc.render import evidence_overlay  # noqa: E402
+
+MODELS = {"released": ROOT / "models/guardian-v2", "examples": ROOT / "models/guardian-v2-demo"}
+BADGE = {PASS: ("#0c8228", "PASS", "may be used without a person looking"), REVIEW: ("#a86c00", "REVIEW", "a person decides"),
+         REACQUIRE: ("#aa4628", "REACQUIRE", "not a usable observation")}
+
+st.set_page_config(page_title="ChipQC Guardian", layout="wide")
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
-
-from chipqc_ui.manifest import manifest_csv, manifest_json, manifest_row  # noqa: E402
-from chipqc_ui.model_adapter import load_baseline_model, predict_baseline  # noqa: E402
-from chipqc_ui.quality import classify_rule, extract_display_metrics  # noqa: E402
-
-
-STATUS_COPY = {
-    "PASS": "规则预览：未触发明显采集质量提醒",
-    "REVIEW": "规则预览：建议人工查看图像采集质量",
-    "REACQUIRE": "规则预览：明显采集缺陷，建议考虑复拍或实验复核",
-}
+@st.cache_resource(show_spinner="Loading the model…")
+def guardian(which: str) -> Guardian:
+    path = MODELS[which] if MODELS[which].exists() else MODELS["released"]
+    g = Guardian(path)
+    _ = g.encoder          # load the backbone once (assigned, so Streamlit does not print it)
+    return g
 
 
-def open_uploaded_image(uploaded_file: st.runtime.uploaded_file_manager.UploadedFile) -> Image.Image:
-    """Decode only the selected image frame and normalize its orientation."""
-    with Image.open(io.BytesIO(uploaded_file.getvalue())) as opened:
-        opened.load()
-        return ImageOps.exif_transpose(opened).convert("RGB")
+def badge(decision: str) -> str:
+    colour, name, meaning = BADGE[decision]
+    return f"<span style='background:{colour};color:#fff;padding:3px 10px;border-radius:4px;font-weight:600'>{name}</span> <span style='color:#52514e'>{meaning}</span>"
 
 
-def show_status(status: str, reasons: tuple[str, ...]) -> None:
-    message = f"{status} · {STATUS_COPY[status]}。依据：{'；'.join(reasons)}。"
-    if status == "PASS":
-        st.success(message)
-    elif status == "REVIEW":
-        st.warning(message)
-    else:
-        st.error(message)
+def thumbnail(g: Guardian, image_id: str):
+    p = g.atlas_dir / f"{image_id}.jpg"
+    return Image.open(p) if p.exists() else None
 
 
-st.set_page_config(page_title="ChipQC Guardian", page_icon="🔬", layout="wide")
-
-st.markdown(
-    """
-    <style>
-    .block-container { max-width: 1200px; padding-top: 2rem; }
-    h1 { letter-spacing: -0.035em; }
-    [data-testid="stMetric"] { background: #f5f8fa; border: 1px solid #e1e9ed;
-        border-radius: 12px; padding: 14px 18px; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-st.title("ChipQC Guardian")
-st.write("芯片/显微图像采集质量预览 · 非临床研究演示")
-
-model = load_baseline_model(PROJECT_ROOT)
-if model.available:
-    st.info(f"**模型状态：本地研究模型已加载。** {model.message} 模型输出与规则预览分开展示。")
-    if model.confidence_threshold is not None:
-        st.warning(
-            f"模型选择阈值 {model.confidence_threshold:.2f} 只是训练脚本中的预设；"
-            "本界面没有证明它经过校准集选优或适用于真实操作，因此不据此给出复拍结论。"
-        )
-else:
-    st.error(f"**模型状态：未训练 / 未接入。** {model.message} 下方 PASS / REVIEW / REACQUIRE 仅来自未校准的图像规则。")
-
-st.warning(
-    "**用途边界**：本页只演示图像采集质量检查流程。它不诊断疾病、不判断芯片是否合格，"
-    "也不替代专家对样本的质量评定。数据集的 good/bad 是专家对样本质量的标签；"
-    "bad 不等于必须重拍，本页的 REACQUIRE 只表示明显图像采集缺陷下的复拍或实验复核建议。"
-)
+g_released = guardian("released")
+spec = g_released.spec
+ev = spec.get("evaluation") or {}
 
 with st.sidebar:
-    st.subheader("判定说明")
-    st.write("规则阈值是演示值，没有按设备、图像类型或专家标签校准。")
-    st.write("PASS：未触发规则；REVIEW：建议人工查看；REACQUIRE：建议考虑复拍或实验复核。")
-    st.caption("上传图像仅在当前应用会话中处理；导出的清单只含文件名、指标与预览结论。")
-    st.subheader("合成演示图")
-    st.caption("这些像素图不含生物样本，用于观察规则行为；规则 PASS 也不表示真实样本有效。")
-    for sample_name, label in (
-        ("synthetic_checker.pgm", "下载棋盘图 · 规则 PASS"),
-        ("synthetic_flat.pgm", "下载平坦图 · 规则 REACQUIRE"),
-    ):
-        st.download_button(
-            label,
-            data=(PROJECT_ROOT / "demo_assets" / sample_name).read_bytes(),
-            file_name=sample_name,
-            mime="image/x-portable-graymap",
-            use_container_width=True,
-        )
+    st.markdown("### ChipQC Guardian")
+    st.caption("Quality gate for organ-on-a-chip brightfield frames")
+    target = st.select_slider("Target: at most this share of passed frames may be bad", options=["0.1", "0.15", "0.2"], value=str(spec["default_error_target"]),
+                              format_func=lambda v: f"{float(v):.0%}")
+    t_pass = g_released.pass_threshold(target)
+    st.caption(f"Pass threshold at this target: P(good) ≥ {t_pass:.2f}")
+    if ev:
+        s = ev.get("system", {}).get(target, {}).get("summary")
+        st.markdown("**Measured on dates the model never saw**")
+        st.caption(f"AUROC {ev['auroc']['value']:.3f} (95 % interval {ev['auroc']['ci95'][0]:.3f}–{ev['auroc']['ci95'][1]:.3f}) over {ev['frames']:,} frames from {ev['dates']} acquisition dates.")
+        if s:
+            st.caption(f"At this target {s['passed_automatically']:.0%} of frames passed automatically and {s['bad_among_passed']:.1%} of those were bad; "
+                       f"{s['sent_to_reacquire']:.0%} were sent back for re-acquisition; {s['left_for_a_person']:.0%} went to a person.")
+    st.markdown("**Scope**")
+    st.caption("The score estimates what cell-biology experts called a good or bad culture in the reference dataset (six cell lines, one laboratory). "
+               "It is not a measurement of viability, barrier function or drug response.")
 
-mode = st.radio("处理方式", ("单张", "批量"), horizontal=True)
-uploaded = st.file_uploader(
-    "上传 JPG、PNG、TIFF、BMP、WebP 图像或合成 PGM 示例",
-    type=["jpg", "jpeg", "png", "tif", "tiff", "bmp", "webp", "pgm"],
-    accept_multiple_files=(mode == "批量"),
-    key=f"upload_{mode}",
-)
-uploads = uploaded if isinstance(uploaded, list) else ([uploaded] if uploaded is not None else [])
+st.title("ChipQC Guardian")
+st.write("Each frame passes an **acquisition gate** (is this a usable observation?), then a **culture-quality score** with an exact evidence map, "
+         "then a **risk-controlled decision**. A person keeps every decision the evidence does not support.")
 
-if uploads:
-    rows = []
-    previews = []
-    errors = []
-    with st.spinner(f"正在分析 {len(uploads)} 张图像…"):
-        for file in uploads:
-            try:
-                image = open_uploaded_image(file)
-                metrics = extract_display_metrics(image)
-                decision = classify_rule(metrics)
-                model_output = ""
-                model_confidence = None
-                model_probability_good = None
-                if model.available:
-                    try:
-                        prediction = predict_baseline(model, image, metrics)
-                        model_output = prediction.label
-                        model_confidence = prediction.confidence
-                        model_probability_good = prediction.probability_good
-                    except Exception as exc:
-                        errors.append(f"{file.name}：模型推理不可用（{exc}）")
-                rows.append(
-                    manifest_row(
-                        file.name,
-                        metrics,
-                        decision,
-                        model_output,
-                        model_confidence,
-                        model_probability_good,
-                    )
-                )
-                if mode == "单张" or len(previews) < 6:
-                    previews.append((file.name, image, metrics, decision))
-            except (UnidentifiedImageError, OSError, ValueError) as exc:
-                errors.append(f"{file.name}：无法解析图像（{exc}）")
+examples_dir = ROOT / "examples"
+example_meta = json.loads((examples_dir / "examples.json").read_text()) if (examples_dir / "examples.json").exists() else {}
+tab_upload, tab_examples = st.tabs(["Your frames", "Bundled examples"])
+frames, which_model = [], "released"
+with tab_upload:
+    files = st.file_uploader("Brightfield frames (PNG, JPEG or TIFF)", type=["png", "jpg", "jpeg", "tif", "tiff"], accept_multiple_files=True)
+    for f in files or []:
+        data = f.getvalue()
+        frames.append((f.name, ImageOps.exif_transpose(Image.open(io.BytesIO(data))).convert("RGB"), hashlib.sha256(data).hexdigest(), None))
+with tab_examples:
+    if example_meta:
+        st.caption(example_meta["note"])
+        if st.toggle("Open the bundled example run", value=not frames):
+            which_model = "examples"
+            for item in example_meta["frames"]:
+                data = (examples_dir / item["file"]).read_bytes()
+                frames.append((item["file"], Image.open(io.BytesIO(data)).convert("RGB"), hashlib.sha256(data).hexdigest(), item))
+    else:
+        st.caption("No bundled examples in this checkout.")
 
-    if errors:
-        st.warning("部分文件未完成处理：\n\n" + "\n\n".join(f"- {error}" for error in errors))
+if not frames:
+    st.info("Add frames above, or open the bundled examples.")
+    st.stop()
 
-    if rows:
-        st.subheader(f"分析结果 · {len(rows)} 张")
-        if mode == "单张":
-            filename, image, metrics, decision = previews[0]
-            left, right = st.columns([1, 1.4], gap="large")
-            with left:
-                st.image(image, caption=f"{filename} · {metrics.width} × {metrics.height} px", use_container_width=True)
-            with right:
-                show_status(decision.status, decision.reasons)
-                metric_cols = st.columns(2)
-                metric_cols[0].metric("清晰度", f"{metrics.clarity:.1f}")
-                metric_cols[1].metric("亮度", f"{metrics.brightness:.3f}")
-                metric_cols[0].metric("对比度", f"{metrics.contrast:.3f}")
-                metric_cols[1].metric("饱和/剪切比例", f"{metrics.clipped_fraction:.1%}")
-                if model.available:
-                    if rows[0]["model_output"]:
-                        probability_good = rows[0]["model_probability_good"]
-                        confidence = rows[0]["model_confidence"]
-                        if isinstance(probability_good, float):
-                            suffix = f" · P(good) {probability_good:.1%}"
-                        elif isinstance(confidence, float):
-                            suffix = f" · 输出类别概率 {confidence:.1%}"
-                        else:
-                            suffix = ""
-                        st.info(f"模型输出（研究性）：{rows[0]['model_output']}{suffix}")
-                    else:
-                        st.warning("该图像没有可用的模型输出；规则预览仍可查看。")
-        else:
-            st.dataframe(rows, hide_index=True, use_container_width=True)
-            with st.expander("查看前 6 张图像及规则依据"):
-                for filename, image, metrics, decision in previews[:6]:
-                    st.image(image, caption=f"{filename} · {metrics.width} × {metrics.height} px", width=280)
-                    show_status(decision.status, decision.reasons)
-            if len(rows) > 6:
-                st.caption("其余图像的指标与结论可在表格和导出清单中查看。")
+g = guardian(which_model)
+records, results = [], []
+progress = st.progress(0.0, text="Scoring frames…")
+for k, (name, image, digest, meta) in enumerate(frames):
+    a = g.assess(image, error_target=target)
+    results.append((name, image, a, meta))
+    records.append({"frame": name, "decision": a.decision, "p_good": round(a.p_good, 4), "reason": a.reasons[0], **{k2: round(v, 4) for k2, v in a.acquisition.items()},
+                    "pass_threshold": g.pass_threshold(target), "error_target": float(target), "model": g.spec["name"], "model_created_utc": g.spec["created_utc"],
+                    "sha256": digest, "assessed_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")})
+    progress.progress((k + 1) / len(frames), text=f"Scored {k + 1} of {len(frames)}")
+progress.empty()
 
-        st.caption("模型概率若显示，仅表示该模型对自身输出的分数；它不是准确率，也不是临床可信度。")
-        download_csv, download_json = st.columns(2)
-        download_csv.download_button(
-            "下载 qc_manifest.csv",
-            data=manifest_csv(rows),
-            file_name="qc_manifest.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
-        download_json.download_button(
-            "下载 qc_manifest.json",
-            data=manifest_json(rows),
-            file_name="qc_manifest.json",
-            mime="application/json",
-            use_container_width=True,
-        )
-else:
-    st.info("上传一张图像开始预览；批量模式可一次选择多张。")
+table = pd.DataFrame(records)
+if which_model == "examples":
+    st.caption("Showing the bundled example run. These frames come from two acquisition dates that the model scoring them never saw.")
+counts = table.decision.value_counts()
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Frames", len(table))
+c2.metric("PASS", int(counts.get(PASS, 0)))
+c3.metric("REVIEW", int(counts.get(REVIEW, 0)))
+c4.metric("REACQUIRE", int(counts.get(REACQUIRE, 0)))
+order = {REACQUIRE: 0, REVIEW: 1, PASS: 2}
+st.dataframe(table.assign(_o=table.decision.map(order)).sort_values(["_o", "p_good"]).drop(columns="_o")[["frame", "decision", "p_good", "reason"]], hide_index=True, width="stretch")
+d1, d2 = st.columns(2)
+d1.download_button("Audit record (CSV)", table.to_csv(index=False).encode(), "chipqc_audit.csv", "text/csv")
+d2.download_button("Audit record (JSON)", json.dumps({"model": g.spec["name"], "thresholds": g.spec["thresholds"][target], "acquisition_limits": g.spec["acquisition_limits"], "frames": records}, indent=1).encode(),
+                   "chipqc_audit.json", "application/json")
 
-with st.expander("四项指标和演示规则如何计算"):
-    st.markdown(
-        """
-        指标在最长边缩至 1024 像素的灰度视图上计算，图像尺寸仍显示原图尺寸。
-
-        | 指标 | 计算方式 | REVIEW 区间 | REACQUIRE 区间 |
-        |---|---|---|---|
-        | 清晰度 | 拉普拉斯响应的方差，越大通常边缘越明显 | < 70 | < 25 |
-        | 亮度 | 灰度均值 ÷ 255 | < 0.30 或 > 0.80 | < 0.15 或 > 0.90 |
-        | 对比度 | 灰度标准差 ÷ 255 | < 0.10 | < 0.045 |
-        | 饱和/剪切比例 | 灰度 ≤ 5 或 ≥ 250 的像素占比 | > 30% | > 65% |
-
-        多项规则同时触发时，显示最严重的建议及全部原因。这里的“饱和”是黑白端像素剪切，
-        不是颜色饱和度。阈值未用真实标签训练或验证，也不对应数据集的 good/bad 标签。
-        """
-    )
+st.subheader("Frame by frame (most urgent first)")
+for name, image, a, meta in sorted(results, key=lambda r: (order[r[2].decision], r[2].p_good)):
+    with st.container(border=True):
+        head = f"**{name}** &nbsp; {badge(a.decision)} &nbsp; P(good) **{a.p_good:.2f}**"
+        if meta:
+            head += f" &nbsp; <span style='color:#52514e'>experts: {meta['expert_label']} · {meta['cell_line']} · held out from this model</span>"
+        st.markdown(head, unsafe_allow_html=True)
+        st.caption(" · ".join(a.reasons))
+        left, right = st.columns(2)
+        left.image(image, caption="Frame", width="stretch")
+        right.image(evidence_overlay(image, a.evidence), caption="Evidence map: blue regions pull the score towards good, red towards bad. The map averages exactly to the score.", width="stretch")
+        with st.expander("Acquisition descriptors and similar reference frames"):
+            lim = g.limits
+            rows = [("Blacked-out share of the field", a.acquisition["occluded_block_frac"], f"re-acquire above {lim['occluded_block_frac_max']:.2f}"),
+                    ("Motion streak (anisotropy)", a.acquisition["streak_anisotropy"], f"re-acquire above {lim['streak_anisotropy_max']:.2f}"),
+                    ("Local sharpness (log10)", a.acquisition["log_sharpness"], f"re-acquire below {lim['log_sharpness_min']:.2f}"),
+                    ("Median brightness", a.acquisition["median_brightness"], f"re-acquire below {lim['median_brightness_min']:.2f}"),
+                    ("Clipped highlights", a.acquisition["saturated_frac"], "reported only")]
+            st.dataframe(pd.DataFrame(rows, columns=["Descriptor", "Value", "Limit"]).round(3), hide_index=True, width="stretch")
+            cols = st.columns(6)
+            for col, nb in zip(cols, a.neighbours):
+                th = thumbnail(g, nb["image_id"])
+                if th is not None:
+                    col.image(th, width="stretch")
+                col.caption(f"{nb['label']} · {nb['cell_line']} · similarity {nb['similarity']:.2f}")
+st.caption("Reference data: Movčana et al., Organ-on-a-Chip (OOC) Image Dataset, Zenodo, doi:10.5281/zenodo.10203721, CC BY 4.0.")

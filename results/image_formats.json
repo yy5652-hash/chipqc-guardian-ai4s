@@ -1,0 +1,36 @@
+{
+ "image_formats": [
+  {
+   "size": [
+    2056,
+    1542
+   ],
+   "mode": "L",
+   "frames": 2048
+  },
+  {
+   "size": [
+    2048,
+    1536
+   ],
+   "mode": "RGB",
+   "frames": 934
+  },
+  {
+   "size": [
+    640,
+    480
+   ],
+   "mode": "RGB",
+   "frames": 87
+  },
+  {
+   "size": [
+    1536,
+    2048
+   ],
+   "mode": "RGB",
+   "frames": 3
+  }
+ ]
+}

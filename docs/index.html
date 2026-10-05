@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChipQC Guardian: browser demo</title>
+<meta name="description" content="A quality gate for organ-on-a-chip brightfield frames, running entirely in your browser.">
+<style>
+  :root { --surface: #fcfcfb; --plane: #f4f3ef; --ink: #0b0b0b; --ink2: #52514e; --muted: #898781; --rule: #e1e0d9; --blue: #1c5cab;
+          --pass: #0c8228; --review: #a86c00; --reacquire: #aa4628; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--surface); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 28px 20px 56px; }
+  h1 { font-size: 30px; line-height: 1.2; margin: 0 0 6px; }
+  h2 { font-size: 18px; margin: 30px 0 8px; }
+  p { margin: 6px 0; } .lede { color: var(--ink2); max-width: 78ch; }
+  a { color: var(--blue); }
+  .links { margin: 10px 0 0; color: var(--ink2); font-size: 15px; }
+  #status { margin: 16px 0 0; padding: 10px 14px; background: var(--plane); border-radius: 8px; color: var(--ink2); font-size: 15px; }
+  #status.ready { background: #eaf3ea; color: #1d4d24; }
+  #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .thumb { padding: 0; border: 2px solid var(--rule); border-radius: 8px; background: #fff; cursor: pointer; overflow: hidden; text-align: left; font: inherit; }
+  .thumb img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+  .thumb span { display: block; padding: 5px 8px; font-size: 12.5px; color: var(--ink2); }
+  .thumb.on { border-color: var(--blue); } .thumb:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  body.busy .thumb, body.busy .file { opacity: .55; pointer-events: none; }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: center; margin-top: 14px; font-size: 15px; }
+  .file { border: 1px solid var(--rule); border-radius: 8px; padding: 7px 12px; background: #fff; cursor: pointer; }
+  .file input { display: none; }
+  fieldset { border: 0; padding: 0; margin: 0; display: flex; gap: 14px; align-items: center; }
+  #progress { color: var(--ink2); min-height: 1.5em; margin-top: 8px; }
+  #result { margin-top: 6px; border: 1px solid var(--rule); border-radius: 10px; padding: 16px; background: #fff; }
+  #decision { font-size: 17px; } #decision .p { margin-left: 10px; } .meaning { color: var(--ink2); }
+  .badge { display: inline-block; padding: 2px 11px; border-radius: 5px; color: #fff; font-weight: 650; letter-spacing: .02em; }
+  .badge.pass { background: var(--pass); } .badge.review { background: var(--review); } .badge.reacquire { background: var(--reacquire); }
+  #reasons, #truth, #parity, #measured { color: var(--ink2); font-size: 14.5px; margin-top: 6px; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .pair figure { margin: 0; } canvas { width: 100%; height: auto; border-radius: 6px; display: block; background: var(--plane); }
+  figcaption { font-size: 13px; color: var(--ink2); margin-top: 5px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 12px; font-size: 14.5px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--rule); } th { color: var(--ink2); font-weight: 600; }
+  td.num { font-variant-numeric: tabular-nums; } tr.hit td { font-weight: 650; }
+  ul { padding-left: 20px; margin: 6px 0; } li { margin: 3px 0; }
+  footer { margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--rule); color: var(--ink2); font-size: 13.5px; }
+  @media (max-width: 720px) { .pair { grid-template-columns: 1fr; } h1 { font-size: 25px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>ChipQC Guardian</h1>
+  <p class="lede">A quality gate for organ-on-a-chip brightfield frames. Each frame gets one of three outcomes: <b>PASS</b> (use it without a person looking), <b>REACQUIRE</b> (not a usable observation) or <b>REVIEW</b> (a person decides), with the evidence behind it. The model runs entirely in your browser: nothing you open here is uploaded.</p>
+  <p class="links"><a href="https://github.com/yy5652-hash/chipqc-guardian-ai4s">Code, model and results</a> · <a href="https://github.com/yy5652-hash/chipqc-guardian-ai4s/blob/main/ChipQC_Guardian_Technical_Report.pdf">Technical report</a> · <a href="https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/writeups/chipqc-guardian-reliable-ooc-image-quality-review">Kaggle writeup</a></p>
+  <p id="status" role="status">Loading…</p>
+
+  <h2>Pick a frame</h2>
+  <p class="lede">Nine real frames from two acquisition dates that the model in this page never saw during fitting.</p>
+  <div id="gallery"></div>
+  <div class="controls">
+    <label class="file">Or open your own frame (PNG, JPEG)<input id="upload" type="file" accept="image/png,image/jpeg"></label>
+    <fieldset><legend style="float:left;margin-right:10px">At most this share of passed frames may be bad:</legend>
+      <label><input type="radio" name="target" value="0.1" checked> 10%</label>
+      <label><input type="radio" name="target" value="0.15"> 15%</label>
+      <label><input type="radio" name="target" value="0.2"> 20%</label>
+    </fieldset>
+  </div>
+  <p id="progress" role="status"></p>
+
+  <section id="result" hidden>
+    <div id="decision"></div>
+    <p id="reasons"></p>
+    <p id="truth"></p>
+    <div class="pair">
+      <figure><canvas id="frame" width="960" height="720"></canvas><figcaption>Frame, as the model sees it (1344 × 1008 px).</figcaption></figure>
+      <figure><canvas id="evidence" width="960" height="720"></canvas><figcaption>Evidence map: blue regions pull the score towards good, red towards bad. Each of the 6,912 patches has an exact share of the score; the map averages to it.</figcaption></figure>
+    </div>
+    <table>
+      <thead><tr><th>Acquisition descriptor</th><th>Value</th><th>Limit</th></tr></thead>
+      <tbody id="descriptors"></tbody>
+    </table>
+    <p id="parity"></p>
+    <p id="measured"></p>
+  </section>
+
+  <h2>What you are looking at</h2>
+  <ul>
+    <li><b>Acquisition gate.</b> Five physical measurements decide whether the frame is a usable observation at all.</li>
+    <li><b>Culture-quality score.</b> The whole frame is read as 3 × 3 tiles by a frozen self-supervised vision transformer (DINOv2 ViT-S/14); a linear classifier on the average patch descriptor gives a calibrated probability that experts would call the culture good.</li>
+    <li><b>Decision.</b> A frame passes only above a threshold fitted, on other acquisition dates, to keep the share of bad frames among passed frames under the target, with a safety margin. Everything else goes to a person.</li>
+  </ul>
+  <p id="headline" class="lede"></p>
+
+  <h2>Limits</h2>
+  <ul>
+    <li>The score estimates what cell-biology experts called a good or bad culture in one laboratory's dataset. It is not a measurement of viability, barrier function or drug response, and it is not for clinical or regulatory decisions.</li>
+    <li>On a different camera the model loses about ten points of AUROC until local labelled frames are added. Treat results on your own images as exploratory.</li>
+    <li>Low scores are not reliable enough to discard a culture, so the system never rejects automatically.</li>
+  </ul>
+
+  <footer>
+    Reference data and bundled frames: Movčana V. et al., <i>Organ-on-a-Chip (OOC) Image Dataset</i>, Zenodo, <a href="https://doi.org/10.5281/zenodo.10203721">doi:10.5281/zenodo.10203721</a>, CC BY 4.0, resized to 1344 × 1008 px. Backbone: DINOv2 (Meta AI), Apache-2.0. Entry for AI4S Open Innovation: AI for Life Science.
+  </footer>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

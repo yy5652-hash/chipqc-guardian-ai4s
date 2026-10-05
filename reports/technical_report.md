@@ -1,231 +1,375 @@
-# ChipQC Guardian: Group-aware, human-reviewed quality control for organ-on-a-chip brightfield images
+# ChipQC Guardian: an auditable quality gate for organ-on-a-chip brightfield imaging
 
-**Submission category:** End-to-End System  
-**Evidence status:** Verified source audit and frozen internal grouped-test results. The public repository and extra organizer registration are complete; Kaggle Writeup submission and external validation remain separate.  
-**Team:** Yi Yu, New York University  
-**Date:** 2026-09-28
+**AI4S Open Innovation: AI for Life Science · Submission category: End-to-End System**
 
-## Abstract
+**Team:** Yi Yu, New York University (individual entry). No cross-disciplinary bonus is claimed.
 
-Organ-on-a-chip (OoC) experiments can produce many brightfield images across cell lines and cultivation times. Researchers inspect these images to assess sample quality, yet binary classification alone does not tell an operator when to trust a model or request expert review. ChipQC Guardian is a research prototype that combines an auditable image-quality classifier with human review and a three-action interface: PASS, REVIEW, and REACQUIRE. The source is the public OoC image dataset of Movčana and colleagues, with 3,072 metadata records across six cell lines. We use the six-digit prefix of each image ID as a conservative acquisition-date-like group key so related images do not cross training, calibration, and test partitions. The transparent baseline extracts deterministic image statistics; the stronger model uses frozen ImageNet MobileNetV2 embeddings, an ExtraTrees classifier selected on calibration groups, and logistic probability calibration. On 670 images from 12 held-out prefix groups, the selected model reached 0.718 accuracy, 0.712 balanced accuracy, 0.772 AUROC, and 0.204 Brier score. Group-bootstrap 95% intervals were wide (balanced accuracy 0.510–0.815; AUROC 0.552–0.875), and no calibration threshold met the planned ≤10% accepted-error objective with at least 20 accepted images. The system therefore does not claim a safe automatic PASS policy or practical time saving; ambiguous and unsupported cases remain human-reviewed.
+**Code, model, features and results:** https://github.com/yy5652-hash/chipqc-guardian-ai4s
 
-**Keywords:** organ-on-a-chip; brightfield microscopy; image quality control; group leakage; probability calibration; human review; selective prediction.
+## Summary
 
-## 1. Problem and application setting
+Before an organ-on-a-chip (OoC) culture is dosed, stained or measured, someone looks at brightfield frames and decides whether the culture is usable. That decision is made by eye, differs between people and is rarely recorded. ChipQC Guardian turns it into a logged, checkable step. For every frame it returns one of three outcomes: **PASS** (use it without a person looking), **REACQUIRE** (the frame is not a usable observation) or **REVIEW** (a person decides, most suspicious frames first), together with the evidence behind the outcome.
 
-OoC systems place living cells in engineered microfluidic environments. Brightfield imaging permits repeated visual monitoring without necessarily consuming the sample. A routine experiment can generate multiple fields or time points for a chip, and a researcher may need to decide whether an image shows a usable culture, whether it needs closer review, and whether the image acquisition itself should be repeated. These are related but different questions. An expert's judgment of a biologically poor sample cannot be converted directly into an instruction to photograph it again.
+The system has three parts. An *acquisition gate* computes five physical descriptors and sends occluded, streaked, defocused or under-exposed frames back to the microscope. A *culture-quality model* reads the whole 2056 × 1542 px frame at 1344 × 1008 px through a frozen self-supervised vision transformer (DINOv2 ViT-S/14) and a linear classifier; because the classifier is linear in the average of the patch descriptors, each of the 6,912 patches has an exact share of the score, which we draw as an evidence map. A *risk-controlled decision* passes a frame automatically only above a threshold fitted, on other acquisition dates, to keep the share of bad frames among passed frames under a chosen target.
 
-The [AI4S Open Innovation challenge](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/overview/description) encourages runnable, explainable AI systems for life science, including OoC use cases. This project selects a narrow task with a real public dataset: quality screening of OoC brightfield images. The proposed user is a researcher or laboratory operator reviewing experimental images. The goal is to prioritize expert attention and make the model's uncertainty and provenance visible at the moment of review. The system is not intended to decide whether a culture is functionally equivalent to a human organ, whether a drug works, or whether a patient has a disease.
+We evaluate on the public Organ-on-a-Chip Image Dataset (3,072 frames, six cell lines, 59 acquisition dates, expert good/bad labels) and hold out **whole acquisition dates**, because frames from one date are not independent. Under that protocol the model reaches an AUROC of **0.852** (95 % interval 0.821–0.883), against 0.738 for the 224 px centre-crop representation of our first submission. On the dataset authors' own split, where every test date also appears in training, the same features reach 0.86 accuracy (published baseline: 0.81). At a 10 % target the assembled system passes 18 % of frames automatically with 8.6 % bad among them, sends 15 % back for re-acquisition, and leaves 66 % to a person in order of suspicion; at a 20 % target 47 % pass. Performance is unchanged on all six cell lines when the line is withheld from training, and it drops on a different camera until local labels are added; we measure both.
 
-The source [data descriptor](https://doi.org/10.3390/data9020028) reports a MobileNetV3 test result of 0.81 accuracy, 0.79 precision, and 0.78 recall under its own protocol. Those are **published literature results**. They are neither our model's results nor a valid target to beat without reproducing the same data split and task. Our central methodological concern is that an image-level split may place similar acquisitions across train and test, inflating apparent generalization. We therefore make acquisition-date-like grouping, calibration, and abstention explicit in both implementation and reporting.
+Everything in this report is regenerated by two commands from released feature files, and every number in the text is injected from the result files those commands write.
 
-### 1.1 Research questions
+## 1. Problem and application scenario
 
-1. Does a transparent image-feature baseline retain useful discrimination on image groups whose six-digit filename prefix was not used for training?
-2. Do its predicted probabilities remain calibrated on held-out groups, including under the six cell-line subpopulations?
-3. Can a PASS band provide useful coverage while keeping the fraction of truly poor-quality samples suggested PASS within a declared operating bound?
-4. Which samples need REVIEW, and can an independent acquisition-quality check identify images that genuinely merit REACQUIRE?
-5. How much of any predictive signal comes from image content rather than cell line, acquisition context, or missing metadata?
+### 1.1 The decision we automate
 
-These questions are deliberately measurable. The grouped internal test addresses discrimination and calibration only within this source collection. Safe automatic PASS, true re-acquisition benefit, and time savings require additional evidence; the latter two need prospective review.
+Organ-on-a-chip systems culture human cells in perfused microchannels to reproduce tissue-level function, and are being adopted as alternatives to animal studies in drug development [1, 2]. In the United States the FDA Modernization Act 2.0 (2022) removed the statutory requirement for animal tests before human trials, and in April 2025 the FDA published a roadmap to reduce animal testing in favour of new approach methodologies, among them human-based laboratory models such as organoids and organ-on-a-chip systems [3, 4]. As these platforms move from single experiments to studies with hundreds of chips [2], routine quality control becomes a throughput and reproducibility problem.
 
-## 2. Source dataset and provenance
+The first quality question is simple and comes before every other measurement: *is this culture in a state worth analysing?* In practice a researcher inspects brightfield images of each chip at each time point and decides. The decision is subjective, it is seldom written down, and a wrong "yes" silently contaminates everything downstream: barrier measurements, imaging read-outs, dose-response curves, and any dataset later used to train models or digital twins. A wrong "no" discards days of culture and reagents.
 
-The [Organ-on-a-Chip (OOC) Image Dataset](https://doi.org/10.5281/zenodo.10203721) contains automated brightfield images of cells grown in OoC devices. Its associated spreadsheet supplies image IDs, cell type, seeding density, elapsed hours after seeding when present, a day field, an expert quality decision, and flow rate when present. The data descriptor identifies A549, Caco-2, HPMEC, HUVEC, NHBE, and HSAEC cell lines and states that a cell-biology expert assigned `good` or `bad` quality labels. This is a sample-quality task with possible acquisition artifacts, not a directly labeled image-retake task.
+ChipQC Guardian addresses that one decision. It does not judge viability, barrier function, toxicity or drug response, and it does not replace the biologist. It answers three narrower questions that can be checked against data:
 
-The local sheet `OOC_datasheet.xlsx` contains 3,072 rows with non-empty, unique image IDs. Its source column `Decision 1/2 (good/bad)` encodes 1,727 rows as `1` and 1,345 as `2`. The heading alone does not specify which number has which meaning. We cross-checked two official archive-preview paths against the sheet: `221010_82.png` under `test/good/A549/0-1_days` has decision `1`; `230529_207.png` under `test/bad/A549/4+_days` has decision `2`. A subsequent full one-to-one image-path join confirmed all 3,072 rows with no path-label conflict. The resulting source mapping is `1 = good`, `2 = bad` for this archive.
+1. Is this frame a usable observation of the culture at all (in focus, not smeared, not half outside the illuminated channel)?
+2. If it is, how likely is it that an expert would call this culture good?
+3. Is that likelihood high enough that nobody needs to look?
 
-### 2.1 Dataset profile
+### 1.2 Who uses it and what changes
 
-| Cell-line code | Total images | `1 = good` | `2 = bad` |
-| --- | ---: | ---: | ---: |
-| HPMEC | 1,462 | 798 | 664 |
-| A549 | 775 | 537 | 238 |
-| CACO | 346 | 109 | 237 |
-| HSAEC | 244 | 163 | 81 |
-| NHBE | 138 | 105 | 33 |
-| HUVEC | 107 | 15 | 92 |
-| **Total** | **3,072** | **1,727** | **1,345** |
+The user is a researcher or core-facility operator who images OoC chips in runs of tens to hundreds of frames. Today each frame costs a look. With the system, frames above the pass threshold need no look, frames that fail the acquisition gate go straight back to the microscope while the chip is still on the stage, and the remaining frames arrive as a queue ordered by score with the evidence attached. Every outcome is written to an audit record (decision, probability, thresholds, descriptor values, model version, image hash), so the quality state of each frame becomes a piece of metadata that travels with the data instead of a memory in someone's head.
 
-The sheet spells the second line `CACO`; the source description uses Caco-2. We preserve the raw value and only normalize display text explicitly. Class balance differs strongly by line. A model can appear adequate overall while performing poorly on HUVEC or NHBE. Grouped analysis is essential because there are only 59 distinct six-digit prefixes, and their sizes range from 6 to 229 images. Some prefixes are almost all one label; the metadata audit found, for example, prefix `230405` with 138 label-2 images and `230119` with 70 label-1 images. This is a concrete reason to suspect collection-context confounding.
+### 1.3 Related work
 
-The three most important missing fields are seeding density (344 missing), time after seeding in hours (2,244 missing), and flow rate (859 missing). A missing value is not a zero dose, zero elapsed time, or zero flow. The first baseline uses image pixels and cell line only for slice analysis, reducing the temptation to learn collection shortcuts from these incomplete fields. A separate metadata-only experiment will test how much predictive signal the context carries.
+Machine-learning quality control of microscopy has mostly targeted focus and imaging artefacts in high-content screening. For organ-on-a-chip cultures the only public benchmark we know of is the dataset used here. Its authors trained a convolutional network on a random split of the images (accuracy 0.81) [6]; George and Kenry classified a 631-image subset from Inception-v3 embeddings, again with a random split [12]. Neither separates acquisition dates, reports calibrated probabilities or a decision rule, or tests unseen cell lines or instruments. Our contribution is not a new network. It is a system built around a frozen foundation model, and a validation that says what such a model can be trusted to decide on data it has not seen, and what it cannot.
 
-### 2.2 Archive integrity and rights
+### 1.4 Contributions
 
-The 6.7 GB image archive matched the upstream MD5 checksum `8f7e058996203d48eb03b2d86c0a2e4d`. Python's ZIP64 reader enumerated 3,237 archive members and `testzip()` returned no corrupt member. The preparation pipeline matched and decoded all 3,072 spreadsheet image IDs, with zero missing, ambiguous, path-label-conflicting, or decode-failed rows. The system `unzip` binary could not parse this ZIP64 archive and reported an extra-byte/central-directory error; that tool limitation is recorded rather than misreported as source corruption because the upstream checksum matched and Python's ZIP64 validation and full decode succeeded.
+- **An end-to-end, auditable quality gate** with three outcomes, a command-line tool, a review console and a browser demo, released with model, features and results.
+- **A whole-frame, high-resolution representation.** Keeping the entire field of view at 1344 px instead of a 224 px crop raises date-held-out AUROC from 0.738 to 0.825 with the same backbone; a self-supervised transformer raises it to 0.852 and transfers best to a different camera.
+- **Exact evidence maps.** The score decomposes additively over image patches by construction, so the explanation is the model's own arithmetic.
+- **A validation protocol that matches how the data were produced.** Whole acquisition dates are held out; regularisation, calibration and thresholds are chosen inside the training dates; intervals resample dates. We quantify how much a random split flatters the same model (AUROC 0.918 against 0.852).
+- **A decision rule that states its own error rate**, and an explicit negative result: automatic rejection is not supported by the data and is therefore not part of the system.
+- **Stress tests that define the system's boundary:** cell lines withheld from training (no loss on any of six), a different camera (a clear loss, with the labelling cost of repairing it), and controlled acquisition faults.
 
-The [paper](https://doi.org/10.3390/data9020028) says `Dataset License: CC-BY-SA`; the exact version and current Zenodo rights text must be checked before redistribution. The project MIT license covers project-authored code and documentation, not raw images. Competition use and public demo publication are subject to the current [organizer guidelines](https://www.aicompetition-pz.com/guidelines) and source rights. We intend to link reviewers to the source rather than put a multi-gigabyte archive in the repository.
+## 2. Data
 
-## 3. System design
+### 2.1 Source, licence and compliance
 
-ChipQC Guardian separates four layers: (i) source and identity audit, (ii) deterministic pixel feature extraction and supervised model, (iii) probability calibration and decision policy, and (iv) a human-facing review interface. This separation matters because a good-looking interface, a probability score, and a biologically valid action are different forms of evidence.
+All experiments use the Organ-on-a-Chip (OOC) Image Dataset of Movčana et al. [5, 6], published on Zenodo under CC BY 4.0. It contains brightfield images acquired by an automated microscope from OoC cultures of six human cell lines, with a class label ("good" or "bad" sample quality as assessed by a biology expert), the cell type, the time after seeding and, for some images, seeding density and flow rate. The data are images of commercially available cell lines; they contain no personal, patient or clinical information. We verified the 6.7 GB archive against its published MD5 checksum, matched all 3,072 spreadsheet rows to exactly one decodable image, and confirmed that the folder label of every image agrees with the spreadsheet label.
 
-```text
-Zenodo image + spreadsheet
-  -> checksum, ID/path/label audit
-  -> group-frozen manifest and pixel features
-  -> training-group classifier
-  -> independent-group probability calibration
-  -> image-usability check + score policy
-  -> PASS / REVIEW / REACQUIRE suggestion
-  -> human judgment; persistent reviewer-reason logging is future work
+We redistribute only derived material, with attribution: the feature vectors of all frames, 144 px grey thumbnails used to show similar reference frames, and nine example frames. The full images must be downloaded from Zenodo.
+
+| Cell line | Tissue | Frames | Good | Bad | Acquisition dates |
+|---|---|---|---|---|---|
+| HPMEC | pulmonary microvascular endothelium | 1,462 | 798 | 664 | 29 |
+| A549 | alveolar epithelium (adenocarcinoma) | 775 | 537 | 238 | 24 |
+| Caco-2 | intestinal epithelium | 346 | 109 | 237 | 17 |
+| HSAEC | small-airway epithelium | 244 | 163 | 81 | 21 |
+| NHBE | bronchial epithelium | 138 | 105 | 33 | 6 |
+| HUVEC | umbilical-vein endothelium | 107 | 15 | 92 | 4 |
+| **Total** | | **3,072** | **1,727** | **1,345** | **59** |
+
+![Example frames, one good and one bad per cell line. The culture sits in the vertical channel; the dark bands are channel walls. Source: Movčana et al., CC BY 4.0.](figures/fig_dataset.jpg)
+
+### 2.2 Three properties of the data that shape the method
+
+**Frames are not independent.** Image IDs have the form `YYMMDD_N`: an acquisition date and the position of the frame in that day's run. Neighbouring frames in a run show neighbouring fields of the same chip, and their labels agree 85 % of the time (independent frames would agree 51 %); the median run of identical labels is 2 frames and the mean 6.1. Ten dates contain only good frames and four only bad ones. A model can therefore score well on a random split by recognising the day. The authors' own train/validation/test folders are such a split: all 57 dates in their test folder also occur in training.
+
+![Expert labels in acquisition order for four dates. Labels come in runs, so frames of one date cannot be treated as independent test cases.](figures/fig_label_runs.png)
+
+**"Bad" mixes two different things.** Looking at label changes inside a run shows that experts marked frames bad both when the *culture* looked wrong (sparse or detached cells, patchy coverage) and when the *image* was not a usable observation (motion smear, a field half outside the illuminated channel, defocus). These call for different actions: a poor culture is a biological finding, a poor image should be taken again. This is why the system has two stages.
+
+**Two cameras.** 2,048 frames are 2056 × 1542 px greyscale and 1,024 are colour frames (2048 × 1536 px, a few at 640 × 480 px) from a second camera, with different label proportions. We treat the camera as a stress test in section 5.6.
+
+## 3. System
+
+![The three stages. A frame that fails the acquisition gate is returned for re-imaging; all other frames are scored, and only frames above the pass threshold skip human review.](figures/fig_system.png)
+
+### 3.1 Acquisition gate
+
+The gate works on the grey frame at 1024 × 768 px and computes five quantities an operator can verify by looking at the image:
+
+| Descriptor | Definition | Rule |
+|---|---|---|
+| Blacked-out share | share of 32 × 32 px blocks whose mean brightness is below 0.12 | re-acquire above 0.25 |
+| Motion streak | anisotropy of gradient energy, abs(Ex − Ey) / (Ex + Ey) | re-acquire above 0.37 |
+| Local sharpness | log10 of the median Laplacian variance over lit blocks | re-acquire below -3.39 |
+| Median brightness | median grey level | re-acquire below 0.25 |
+| Clipped highlights | share of pixels above 0.97 | reported only |
+
+The blacked-out limit is a fixed physical choice. The streak and brightness limits are the 5 % tails and the sharpness limit the 2 % tail of the reference frames; they are stored in the model file and can be re-fitted for another microscope. Clipped highlights are reported but never trigger re-acquisition: an empty, sparsely covered channel is bright for biological reasons, and judging that is the model's job.
+
+### 3.2 Culture-quality model
+
+**Representation.** The frame is resized to 1344 × 1008 px (a 0.65× downscale that keeps the whole field of view) and cut into 3 × 3 non-overlapping tiles of 448 × 336 px. Each tile passes through DINOv2 ViT-S/14 with registers [7, 8], a vision transformer trained without labels on 142 million images and used here with frozen weights. Every 14 × 14 px patch yields a 384-dimensional descriptor; a frame is described by 6,912 of them, and the frame embedding is their mean.
+
+**Classifier.** An L2-regularised logistic regression on the standardised embedding. With mean μ, scale σ, weights w and intercept b fitted on the training frames, the log-odds of a frame with patch descriptors f_1 … f_N is
+
+`logit = b + Σ_c w_c (mean_i f_ic − μ_c) / σ_c = (1/N) Σ_i [ v · f_i + b′ ]`, with `v = w / σ` and `b′ = b − Σ_c w_c μ_c / σ_c`.
+
+**Exact evidence map.** The right-hand side is an average over patches. The term `v · f_i + b′` is patch *i*'s share of the frame's log-odds: positive where the patch pulls the score towards "good", negative towards "bad". Drawing these values over the frame gives a map that averages exactly to the score. No gradient, perturbation or surrogate model is involved, so the map cannot disagree with the prediction it explains. It explains the model, not the biology: it shows where the model found its evidence, which a reviewer can then judge.
+
+**Calibration.** A two-parameter logistic (Platt) map [9] is fitted to out-of-fold log-odds and applied to the score, so that "0.8" means that about 80 % of such frames were called good by experts on dates the model had not seen (section 5.3).
+
+### 3.3 Risk-controlled decision
+
+For a target error α chosen by the laboratory (10, 15 or 20 %), the pass threshold is the lowest calibrated probability such that, among frames at or above it that also passed the acquisition gate, the share labelled bad stays at or below α with a safety margin: we require the one-sided 90 % Wilson upper bound of that share, not the share itself, to be at most α. Picking the largest set that just meets a target on the fitting data is optimistic; the margin pays for that. The threshold is fitted on out-of-fold predictions of training dates only. Frames above the threshold are passed; all others go to review, ordered by score, with a "likely bad" hint below 0.5. This is selective classification [10] with the threshold chosen for a stated error rather than for accuracy.
+
+There is deliberately **no automatic FAIL**. We built it, measured it on unseen dates and removed it (section 5.4): low scores were right too rarely for a decision that discards a culture.
+
+### 3.4 Context for the reviewer and the audit record
+
+For each frame the console shows the three most similar good and bad reference frames (cosine similarity of standardised embeddings), so a reviewer sees what the model is comparing against. Each assessment is exported as a record:
+
+```
+frame, decision, p_good, reason, occluded_block_frac, streak_anisotropy, log_sharpness,
+median_brightness, saturated_frac, pass_threshold, error_target, model, model_created_utc,
+sha256, assessed_utc
 ```
 
-The current interface accepts uploaded images, shows the original image and acquisition-quality descriptors, marks model availability, displays a model score if a compatible artifact is loaded, and explains the reason for its rule preview. Source context is available in the data-audit files but is not yet displayed on this page. If the model artifact is absent or incompatible, the page says so. The illustrative quality heuristic demonstrates what low clarity, darkness, or clipping looks like, but until its thresholds have been evaluated against relevant labels it is a **demo rule**, not an accuracy result.
+### 3.5 Implementation
 
-### 3.1 Image representation and models
+![The review console on the bundled example run: outcome counts, the ordered audit table and, below it, one card per frame with the frame, its evidence map, the acquisition descriptors and similar reference frames.](figures/console_overview.png)
 
-The current baseline computes 24 reproducible pixel-derived descriptors after EXIF orientation handling, RGB conversion, and bounded resizing to a maximum side of 512 pixels for statistics. They include original width/height and aspect ratio; grayscale brightness mean and percentiles; dark and bright pixel fractions; contrast; grayscale entropy; color means and variation; Laplacian variance; gradient magnitude and edge fraction; and spatial illumination variation. These are inexpensive to compute and can help an operator inspect acquisition conditions. They are not a full morphology representation and may miss biologically important patterns.
+The system is a small Python package (`src/chipqc`, 602 lines) with three entry points: `inference.py` (a folder of frames in, audit records and evidence maps out), `app.py` (a Streamlit review console) and `evaluate.py` (all experiments). A released model is a folder with a JSON file (classifier weights, calibrator, thresholds, acquisition limits, evaluation summary) and one array file of reference embeddings; nothing is pickled. One frame takes 0.14 s on a laptop GPU and 0.43 s on a laptop CPU. A static browser demo (https://yy5652-hash.github.io/chipqc-guardian-ai4s/) runs the same pipeline on the visitor's machine: the frame reading and descriptors are ported to JavaScript with Pillow-compatible resampling, and the backbone, classifier and calibrator are exported as one ONNX graph. In headless Chromium its P(good) on the bundled frames differs from the Python reference by at most 0.000001, at about 7 s per frame on a CPU through WebAssembly.
 
-The baseline imputes missing feature values by the training median, standardizes features, fits class-weighted logistic regression, and calibrates its decision score on independent groups. It performed poorly on held-out groups (0.508 balanced accuracy and 0.536 AUROC), so it is retained as a falsifiable lower reference rather than promoted as the product model.
+## 4. Experimental design
 
-The selected model applies the public torchvision MobileNetV2 `IMAGENET1K_V2` preprocessing and frozen backbone to obtain a 1,280-dimensional image representation. ExtraTrees candidates with three `max_features` settings were fit only on 35 training groups and ranked only on 12 calibration groups by balanced accuracy plus AUROC. The selected `max_features=0.5` model was then calibrated with logistic regression on the calibration groups. A 0.62 classification threshold maximized calibration balanced accuracy; after selection, the 12-group test partition was evaluated once. This is transfer learning with a frozen representation, not end-to-end biological pretraining, and ImageNet features may encode acquisition style rather than transferable cell morphology.
+**Primary protocol.** Five folds over the 59 acquisition dates, repeated three times with different fold assignments; each frame's reported probability is the mean over repeats of predictions from models that never saw its date. Inside every training set a second date-grouped cross-validation (four folds) chooses the regularisation strength from {0.001, 0.003, 0.01, 0.03, 0.1}, fits the calibrator and chooses the pass threshold. Nothing is tuned on the dates being scored.
 
-### 3.2 Operational decisions
+**Uncertainty.** All 95 % intervals are percentile intervals from 2,000 bootstrap resamples of *dates*, not frames. With 85 % label agreement between neighbouring frames, frame-level intervals would be far too narrow.
 
-Let `p_good` be the calibrated estimate for the source expert's `good` class. A demonstration rule may classify `p_good >= t` as likely good, `p_good <= 1-t` as likely bad, and the interval between them as REVIEW. The current baseline's default `t = 0.8` is an implementation parameter, **not** a validated safety threshold. A release policy must choose and freeze the threshold on calibration data against a stated false PASS objective, then report its held-out coverage and error.
+**Metrics.** AUROC and balanced accuracy for discrimination; Brier score and expected calibration error for probabilities; for the decision rule, the share of frames passed automatically and the share of bad frames among them.
 
-PASS means the image is readable and the model is sufficiently confident under its evaluated conditions to present a positive suggestion for human confirmation. REVIEW covers uncertain scores, data outside validation support, or incompatible model/data states. REACQUIRE must be tied to a separate image-usability condition or a human-confirmed need for repeat imaging. Low `p_good` from a biologically poor sample should prompt REVIEW or a sample-quality warning; it does not prove that another photograph will improve the sample. This distinction is a core limit of the source labels and should appear on screen and in the video.
+**Comparisons.** (i) The representation of our first submission (MobileNetV2, 224 px centre crop). (ii) The same backbone on the whole frame at 672, 1344 and 2048 px. (iii) Other frozen backbones on the whole frame: ResNet-50, ConvNeXt-Tiny [11], and DINOv2 at three tilings and two model sizes. (iv) No-image baselines: cell line and culture day only; the five acquisition descriptors only. (v) The published protocol: the authors' own split, for comparison with the published baseline.
 
-### 3.3 Human override and auditability
+**Stress tests.** Leave-one-cell-line-out; training on one camera and testing on the other, with 0 to 8 labelled dates of the new camera added; controlled defocus, motion, occlusion and under-exposure applied to real frames.
 
-The desired workflow keeps the original image and a short reason next to every suggested action. A trained reviewer can accept, reject, or amend the suggestion. The prototype should preserve the distinction between a model score, a heuristic acquisition check, and a human final decision. When reviewer event logging is implemented, the log should store image ID, timestamp, artifact version, suggested action, reviewer choice, and reason while respecting laboratory data governance. A demonstration without persistent event logging must be described as a review interface prototype, not an audited production workflow.
+**What was selected on these results.** This is not a pre-registered test, and we list what the evaluation itself shaped. The backbone and the input resolution were chosen by comparing representations under the primary protocol, and the choice between the two best (ConvNeXt-Tiny and DINOv2) was settled by how they transfer to the other camera. The 4 × 4 tiling was run as a check after the released configuration had been fixed, and it did not change the release. The safety margin of the pass rule and the removal of automatic rejection were decided after seeing the rule's behaviour on held-out dates. The headline number, the camera result and the pass-rule numbers therefore carry some selection optimism. The top representations differ by less than their intervals; we claim the level of performance of whole-frame self-supervised features, not a ranking among them. The cell-line and acquisition-fault tests did not influence any choice.
 
-## 4. Leakage-aware experiment design
+## 5. Results
 
-The primary test of generalization uses the first six characters of `imageID` as a date-like group key. All images sharing a prefix stay in the same train, calibration, or test set. The implementation searches deterministic GroupShuffleSplit candidates to approximate a 60/20/20 image allocation while maintaining both labels and reasonable cell-line balance. The frozen manifest has 35/12/12 groups and 1,804/598/670 images in train/calibration/test. This is a stronger independence barrier than random images, but the prefix does not prove separate chips, donors, or experiments. If stronger provenance becomes available, the analysis should group by the strongest shared source.
+### 5.1 Headline
 
-Preprocessing fit only on training groups. Calibration fit only on calibration groups. The test set remains closed during model and policy selection. A source directory named `train`, `val`, or `test` is recorded but does not override this primary grouping. The split-search algorithm uses labels and cell-line composition for partition balance, not image features or model outcomes; the report should disclose this design choice. Every released experiment must include a split manifest and hash, and assert that image IDs and prefixes do not cross partitions. Exact and perceptual duplicate checks add another leakage barrier.
+| Measure (dates held out, 3,072 frames, 59 dates) | Value | 95 % interval |
+|---|---|---|
+| AUROC | 0.852 | 0.821–0.883 |
+| Balanced accuracy at 0.5 | 0.773 | 0.741–0.802 |
+| Accuracy at 0.5 | 0.781 | 0.754–0.809 |
+| Brier score | 0.154 | 0.137–0.168 |
+| Expected calibration error, before / after calibration | 0.041 / 0.029 | |
 
-### 4.1 Comparators and ablations
+On the frozen 12-date test split published with our first submission, where that version scored an AUROC of 0.772, the new model reaches 0.859 (0.755–0.914) when fitted on the other 47 dates and scored once.
 
-The first reference is a majority-class predictor calculated only from training data. The second is the image-statistic logistic baseline. Planned ablations include dropping dimensions, brightness, or color features to test acquisition shortcuts; metadata-only and missingness-only predictors to reveal context confounding; and a conditional fusion model if it adds value without leaking source identity. Each comparator must use the same group split and model-selection discipline. A random image split may be shown as a secondary demonstration of leakage risk, clearly labeled non-primary, rather than as the headline score.
+No-image baselines stay near chance: cell line and culture day alone reach an AUROC of 0.511, the five acquisition descriptors alone 0.632. The model works at every culture age, including the first day after seeding, when a failing culture is cheapest to replace:
 
-The six cell lines also support a leave-one-cell-line-out stress check, but group and label availability may make some folds unstable. These analyses should remain exploratory. A high score on the six source lines cannot establish performance on a different microscope, chip geometry, stain, or laboratory.
+| Time after seeding | Frames | AUROC (dates held out) |
+|---|---|---|
+| 0–1 days | 852 | 0.817 |
+| 2–3 days | 798 | 0.869 |
+| 4 days | 223 | 0.819 |
+| more than 4 days | 1,199 | 0.828 |
 
-## 5. Evaluation measures and interpretation
+### 5.2 The hold-out scheme decides what the number means
 
-Accuracy alone is insufficient for this task. The 3,072 spreadsheet labels are moderately imbalanced overall, and individual cell lines are much more skewed. For the classifier, we report class-specific precision, recall, F1, macro-F1, balanced accuracy, AUROC and average precision where defined, Brier score, a reliability diagram, and a confusion matrix. Every metric is tied to one manifest, one checkpoint, and one fixed class convention: `good` is the positive class. Results by cell line must display image count **and** independent prefix-group count.
+![Left: accuracy on the dataset authors' own test folder. Right: AUROC of the same features and classifier under three hold-out schemes.](figures/fig_protocols.png)
 
-For the workflow, define **false PASS exposure** as `bad images suggested PASS / all bad images evaluated`. This measures how often an actually poor-quality source sample escapes review. Also define **error among PASS** as `bad images suggested PASS / all images suggested PASS`, which answers a different operator question. **PASS coverage** is `PASS suggestions / all evaluated images`. REVIEW and REACQUIRE proportions use the same total-image denominator and are reported separately. A zero denominator produces `not estimable`, not an apparently perfect 0% error.
+On the authors' split our features reach 0.858 accuracy, 0.858 precision and 0.893 recall on 656 test frames, against 0.81, 0.79 and 0.78 reported with the dataset [6]; a later study on a 631-image subset of two cell lines reports about 0.83 accuracy for a four-class version of the task with a random 70/30 split [12]. These numbers are comparable with each other, but they are not estimates of performance on a new imaging day: the AUROC falls from 0.926 on the authors' split to 0.852 when whole dates are held out. We report the lower number as our result.
 
-Resample complete held-out groups to form uncertainty intervals, or use an appropriate cluster-aware method; ordinary image-level bootstrap would understate correlation among images from one acquisition group. Report the number of groups and how many resamples lack one class. Calibration uncertainty and per-cell-line estimates may be broad because the independent group count is limited. Selective policy curves should show coverage versus false PASS exposure across thresholds, with the chosen threshold fixed before test evaluation.
+### 5.3 What moves the result: the whole frame, at resolution, with self-supervised features
 
-### 5.1 Frozen internal results
+![AUROC on held-out dates for each representation, with 95 % intervals over dates.](figures/fig_representations.png)
 
-| Result | MobileNetV2 + ExtraTrees | Handcrafted logistic | Majority | Evidence |
-| --- | ---: | ---: | ---: | --- |
-| Train / calibration / test groups | 35 / 12 / 12 | Same | Same | Frozen split artifact |
-| Train / calibration / test images | 1,804 / 598 / 670 | Same | Same | `vision_evaluation.json` |
-| Test images: good / bad | 357 / 313 | Same | Same | Matching report |
-| Accuracy | **0.718** | 0.540 | 0.533 | Test predictions |
-| Balanced accuracy | **0.712** | 0.508 | 0.500 | Test predictions |
-| Macro-F1 | **0.712** | Not promoted | 0.348 | Confusion matrix |
-| AUROC | **0.772** | 0.536 | 0.500 constant score | Test probabilities |
-| Brier score | **0.204** | 0.255 | Not separately fitted | Calibrated probabilities |
-| Confusion matrix, rows bad/good | `[[193,120],[69,288]]` | `[[5,308],[0,357]]` | All good | Evaluation artifacts |
-| 95% group-bootstrap balanced accuracy | **0.510–0.815** | Not computed | 0.500 | 2,000 group resamples |
-| 95% group-bootstrap AUROC | **0.552–0.875** | Not computed | 0.500 | 2,000 group resamples |
+| Representation | AUROC | 95 % interval | Difference from the released model (95 % interval of the difference) | Passed at a 10 % target |
+|---|---|---|---|---|
+| MobileNetV2, 224 px centre crop (first submission) | 0.738 | 0.695–0.787 | −0.114 (−0.157 to −0.068) | 1 % |
+| MobileNetV2, whole frame, 672 px | 0.795 | 0.765–0.833 | −0.058 (−0.081 to −0.029) | 12 % |
+| MobileNetV2, whole frame, 1344 px | 0.825 | 0.790–0.862 | −0.028 (−0.052 to −0.003) | 16 % |
+| MobileNetV2, whole frame, 2048 px (native) | 0.814 | 0.780–0.851 | −0.038 (−0.059 to −0.014) | 13 % |
+| ResNet-50, whole frame, 1344 px | 0.821 | 0.782–0.860 | −0.031 (−0.055 to −0.009) | 8 % |
+| ConvNeXt-Tiny, whole frame, 1344 px | 0.843 | 0.814–0.875 | −0.010 (−0.031 to +0.011) | 20 % |
+| DINOv2 ViT-S/14, whole frame at 896 px, 2 × 2 tiles | 0.833 | 0.795–0.872 | −0.019 (−0.037 to −0.002) | 15 % |
+| **DINOv2 ViT-S/14, whole frame at 1344 px, 3 × 3 tiles (released model)** | 0.852 | 0.821–0.883 | (reference) | 18 % |
+| DINOv2 ViT-S/14, whole frame at 1792 px, 4 × 4 tiles | 0.860 | 0.828–0.891 | +0.007 (−0.004 to +0.020) | 23 % |
+| DINOv2 ViT-B/14, whole frame at 1344 px, 3 × 3 tiles | 0.858 | 0.825–0.888 | +0.005 (−0.010 to +0.018) | 18 % |
 
-The selected model's point estimates improve materially over both lower references, but the intervals are wide because only 12 independent prefix groups are in the test partition. Cell-line results are heterogeneous: test balanced accuracy ranged from 0.551 for A549 to 0.848 for CACO; HSAEC had only one bad test example, and NHBE had only one class in test, so their balanced metrics are unstable or undefined. The published MobileNetV3 result of 0.81 accuracy remains absent from the model columns because its evaluation protocol differs.
+Three steps account for the gain over our first submission. Showing the model the whole frame instead of its centre, and at four times the linear resolution, is worth 0.086 AUROC with an unchanged backbone; native resolution adds nothing over 1344 px. A stronger supervised backbone adds a little. Self-supervised features add slightly more on held-out dates and transfer best to another camera (section 5.6).
 
-The planned automated-PASS condition was not met: no calibration threshold accepted at least 20 images while keeping accepted error at or below 10%. Consequently, the current release has no validated automatic PASS coverage or false-PASS guarantee. The interface displays the research score and keeps the final decision with a human; the acquisition-quality REACQUIRE heuristic remains separate and unvalidated.
+The fourth column scores each representation and the released model on the same resampled dates, which is a sharper comparison than setting two intervals side by side. Within DINOv2 the gain from resolution flattens. With 2 × 2 tiles at 896 px the model is 0.019 below the released 3 × 3 tiles at 1344 px, and the interval of that difference excludes zero. With 4 × 4 tiles at 1792 px it is 0.007 above, for 16 tiles per frame instead of 9; the larger ViT-B model, with four times the parameters, differs by +0.005. Neither of these two intervals excludes zero, and on the other camera the 4 × 4 variant reaches 0.72 and 0.75 against 0.71 and 0.74. We therefore released the smaller configuration, which is also the one a browser can run, and we do not claim that it is the best row of this table.
 
-### 5.2 Case evidence and what is withheld
+![ROC curves on held-out dates (left) and reliability of the predicted probability before and after calibration (right).](figures/fig_roc_calibration.png)
 
-The public package includes the frozen manifest, evaluation JSON, and deterministic synthetic UI examples. The latter demonstrate software behavior only: an 8-by-8 checker receives a rule-preview PASS, while a flat 8-by-8 image triggers a REACQUIRE preview because clarity and contrast are low. Neither is a biological specimen or a validation case for the sample-quality classifier. The model may label the flat synthetic input `good` while the acquisition rule advises re-imaging; that disagreement is intentionally displayed and shows why the decision layers must not be conflated.
+### 5.4 The decision rule on unseen dates
 
-This report does not reproduce third-party raw images or present selected errors as representative case studies without a rights check and expert interpretation. It also does not draw a precision-recall or reliability curve from summary metrics alone. Those figures require the frozen per-image probability outputs and should be added only after independent reproduction. The reported confusion matrix and grouped intervals are directly available in `vision_evaluation.json` and are not inferred from a stylized diagram.
+![Left: share of bad frames among automatically passed frames as more frames are passed; dots mark the thresholds chosen on training dates for each target. Right: where the 3,072 frames go at a 10 % target.](figures/fig_risk_coverage.png)
 
-## 6. What this system can and cannot establish
+| Target (bad among passed) | Passed automatically | Bad among passed (measured) | Sent to re-acquire | Left for a person |
+|---|---|---|---|---|
+| 5 % | 4 % | 6.2 % | 15 % | 81 % |
+| 10 % | 18 % | 8.6 % | 15 % | 66 % |
+| 15 % | 34 % | 13.6 % | 15 % | 51 % |
+| 20 % | 47 % | 17.1 % | 15 % | 38 % |
 
-The model can learn patterns correlated with one expert's labels in one public data collection. It cannot prove that those labels capture all biological quality dimensions. Expert criteria and inter-rater variation were not present in the spreadsheet audit. A model's probability can be miscalibrated when the acquisition hardware, culture protocol, cell line, or prevalence changes. The current design has no independent prospective laboratory cohort and no measured operator time savings. It cannot distinguish all biologically poor samples from capture errors using the binary source label alone.
+At the 10, 15 and 20 % targets the measured share of bad frames among passed frames stays below the target, although every threshold was fitted on other dates. A 5 % target is not supported: too few frames clear it, and the measured share (6.2 %) exceeds it. The console therefore offers 10, 15 and 20 %. The acquisition gate fires on 15 % of frames, and experts had labelled 66 % of those bad (against 44 % overall). Within the review queue the score still orders frames usefully (AUROC 0.80): a reviewer who starts at the low end meets 55 % of the queue's bad frames in its first third.
 
-The name REACQUIRE is therefore operationally narrow. A corrupt or unreadable file can justify a prompt to get another capture. Blur, underexposure, or clipped highlights may justify review of imaging settings, but only after thresholds are validated against a suitable acquisition-quality reference. A predicted `bad` tissue sample may require a different laboratory action, and the system should route it to a human rather than prescribing re-imaging. Out-of-distribution inputs from other microscopes or cell lines default to review until validated.
+**Why there is no automatic FAIL.** Choosing a fail threshold the same way gives, at a 10 % target, a set of 5 % of frames of which 23 % were good: far above the target. Once frames with acquisition faults are removed, low scores on a new date are not reliable enough to discard a culture, so those frames go to a person.
 
-The subgroup table may have high variance for HUVEC and NHBE. If a held-out split contains few independent prefixes for one line, that line's numerical score should be accompanied by an instability warning, not a confident claim of fairness or generality. The project does not have patient health information in the source sheet, but future clinical or donor-linked data would require separate privacy and ethics governance.
+### 5.5 Cell lines the model has never seen
 
-## 7. Reproducibility and implementation
+![AUROC per cell line when the line is in training (dates held out) and when it is excluded from training entirely.](figures/fig_cell_lines.png)
 
-The repository contains project-authored source, dependency specifications, the scripts `audit_metadata.py`, `prepare_dataset.py`, `train_baseline.py`, `extract_embeddings.py`, `train_vision_model.py`, and `evaluate.py`, a Streamlit demo entry point, data/model cards, and exact commands. The raw data are obtained from Zenodo. Preparation creates an image-to-sheet manifest and feature table; training saves classifiers, calibrators, label mappings, seeds, and frozen group IDs. `vision_evaluation.json` records candidate selection, split counts, held-out metrics, subgroup slices, and complete-group bootstrap intervals.
+Excluding a cell line from training changes its AUROC by at most 0.02 on any of the six lines. The model was never shown a single frame of the held-out line, yet it ranks that line's cultures as well as when the line is in training. This suggests that the self-supervised descriptors capture cues shared across epithelial and endothelial monolayers (coverage, texture regularity, detachment) rather than line-specific appearance, and it is the property a quality gate needs most when a laboratory brings in a new cell type. The ImageNet-supervised ConvNeXt-Tiny did not have it on every line: withholding NHBE lowered its AUROC on that line from 0.90 to 0.69. Two cautions apply: A549 is the hardest line in both settings (0.75), and HUVEC and NHBE come from only 4 and 6 dates.
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python scripts/audit_metadata.py
-python scripts/prepare_dataset.py
-python scripts/train_baseline.py
-python scripts/evaluate.py
-python -m pip install -r requirements-vision.txt
-python scripts/extract_embeddings.py
-python scripts/train_vision_model.py
-streamlit run app.py
+### 5.6 A different camera
+
+Trained on one camera and tested on the other, the model loses about nine to ten points of AUROC. Adding labelled sessions from the new camera repairs the loss gradually: with eight dates (about 176 colour or 1,048 grey frames) the grey camera is back at its within-camera level and the colour camera is most of the way there. The supervised ImageNet backbones transfer worse than the self-supervised one: on the whole frame they reach 0.56–0.70 from grey to colour and 0.64–0.71 from colour to grey, against 0.71 and 0.74; the 224 px crop of our first submission reaches 0.51 and 0.55. The consequence for deployment is stated in section 6: a new instrument needs local reference frames, and the system should start in review-only mode there.
+
+![AUROC on a camera absent from training as labelled dates of that camera are added (mean of 30 random draws; band: 10th to 90th percentile). The grey line is the level reached when the camera's other dates are in training.](figures/fig_camera.png)
+
+| Training data | Test: colour camera | Test: grey camera |
+|---|---|---|
+| Same camera, other dates (primary protocol) | 0.794 | 0.843 |
+| Other camera only | 0.706 | 0.741 |
+| Other camera + 2 labelled dates of this one | 0.734 | 0.809 |
+| Other camera + 8 labelled dates of this one | 0.765 | 0.847 |
+
+### 5.7 The acquisition gate
+
+![Left four panels: share of frames flagged by each rule when a controlled fault is applied to real frames, by severity; the grey line is the rule's firing rate on the untouched frames. Right: share of flagged real frames that experts had labelled bad.](figures/fig_acquisition.png)
+
+Applied to 360 real frames (60 per cell line), the rules catch 86 % of frames defocused with a 2 px Gaussian and all at 4 px, 93 % of 10 px motion streaks, all frames with 40 % of the field blacked out, and 87 % of frames at 0.35× exposure, while firing on 9.2 % of the untouched frames. On the real data, 154 frames trip the streak rule and 81 % of them carry a "bad" label; for occlusion the figure is 72 %. The defocus rule is the weakest link on real data (42 % labelled bad, no different from the average): low local sharpness also occurs in sparse but correctly focused cultures.
+
+### 5.8 What the evidence maps show
+
+![Four frames from dates held out of the model that scored them. Blue regions pull the score towards good, red towards bad; each map averages exactly to the frame's score.](figures/fig_evidence.jpg)
+
+In the confluent culture the positive evidence sits on the cell layer inside the channel. In the poor culture the negative evidence covers the dark, blotchy stretches of the channel; in the two re-acquired frames it follows the smear and the blacked-out band. The maps also expose two things a reviewer should know. Structures outside the culture area (channel walls, the textured chip body) receive non-zero evidence in some frames, so the model is not looking at cells alone. And the maps show faint rectangular steps at tile borders: each patch descriptor carries context from its whole tile, so part of the evidence is tile-level rather than local. We show both rather than smooth them away, because this is the information a reviewer needs in order to decide how far to trust a score.
+
+### 5.9 Where the model and the experts disagree
+
+![The four largest disagreements among gate-passing frames of the two held-out dates. Top: labelled bad, scored high. Bottom: labelled good, scored low.](figures/fig_disagreements.jpg)
+
+The two highest-scored frames that experts labelled bad show an even, confluent-looking layer; both stayed below the pass threshold and went to review. The two lowest-scored frames that experts labelled good are dense, dark, granular A549 fields, one with an air bubble. A single frame cannot settle who is right. The label may reflect knowledge about the chip that is not visible in this field (labels run over neighbouring frames, section 2.2), and A549, the line with the lowest AUROC, forms dense cultures that look unlike the other lines. These cases are why the system keeps a person in the loop for everything except confident passes.
+
+## 6. Reliability and limitations
+
+- **One laboratory, one chip family.** All frames come from one group's platform. Performance on other chip designs, magnifications or illumination is unknown; the camera experiment shows that an instrument change alone is enough to require local labels.
+- **Labels are one group's judgement.** The label is an expert's good/bad call, not a functional measurement, and no per-expert votes are published, so the model's errors include cases where experts would disagree with each other. A PASS means "experts in this dataset would probably have called it good", nothing more.
+- **Dates are a proxy.** The first six characters of the image ID separate acquisition days, not verified chips or donors. Holding out dates removes the leakage we could identify [13, 14]; it does not prove independence at the chip level.
+- **Few independent units.** 59 dates, of which 14 are single-class, give wide intervals. The headline interval spans 0.062 AUROC.
+- **The error target is empirical.** Thresholds met their targets on held-out dates in this dataset. This is evidence, not a guarantee, and it must be re-checked after any change of instrument, protocol or cell line.
+- **No automatic rejection, by design, and no 5 % target.** The data support passing frames at a 10 % target or looser; they do not support discarding cultures automatically or a stricter pass rule.
+- **The evidence map explains the model.** It is exact with respect to the classifier, but the patch descriptors come from a deep network: the map shows where the evidence is, not which biological property produced it.
+- **Not validated prospectively and not for clinical or regulatory decisions.**
+
+## 7. Potential impact and path to use
+
+**Immediate use.** A laboratory imaging OoC chips can run the tool on each acquisition folder. At a 10 % target and on dates the model had not seen, per 1,000 frames about 185 need no inspection, about 151 are returned to the microscope with a stated reason while re-imaging is still possible, and about 665 are reviewed in order of suspicion. The laboratory chooses the target; at 20 % about 470 frames per 1,000 pass.
+
+**Standardised quality metadata.** The audit record makes the quality state of every frame explicit, versioned and attached to the image hash. This is the kind of metadata that image collections need before they can be pooled across experiments, shared, or used to train downstream models such as response predictors or digital twins.
+
+**Adoption on a new platform, including other tissues.** The backbone is frozen and the classifier has 384 weights, so adapting to a new microscope or tissue means labelling reference frames and refitting in seconds, not training a network. Section 5.6 gives a first estimate of the labelling cost (several sessions, a few hundred frames). The recommended procedure is: run in review-only mode, collect expert decisions through the console, refit, and switch on automatic passing only when held-out sessions meet the target.
+
+**What would make it stronger.** Per-expert labels to measure the agreement ceiling; chip and channel identifiers to move from frames to chips; data from a second laboratory; and a prospective study measuring review time and downstream assay quality with and without the gate.
+
+## 8. Reproducibility
+
+```
+git clone https://github.com/yy5652-hash/chipqc-guardian-ai4s && cd chipqc-guardian-ai4s
+python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+python evaluate.py                 # every number in this report (2 min, CPU)
+python scripts/make_figures.py     # every chart
+python scripts/build_report.py     # this report
+python inference.py examples/      # the released model on the bundled frames
+streamlit run app.py               # the review console
 ```
 
-Before release, a fresh environment must reproduce the same group assignments and metrics from the same complete source files. Record the local source SHA-256 values, upstream MD5 checks, Git commit, dependency versions, platform, run date, manifest/checkpoint hashes, and exact evaluation command. Models or assets that require redistribution rights should be downloaded separately or omitted with clear instructions.
+`evaluate.py` needs no images: the repository ships the embeddings of all 3,072 frames for every representation in section 5.3 and the acquisition descriptors. `scripts/reproduce_from_images.sh` rebuilds those files from the Zenodo archive (download, checksum, manifest, embeddings, descriptors), which takes about 15 minutes on a laptop GPU. The report itself is generated: `scripts/build_report.py` fills this text from `results/*.json`, so a number cannot drift from the result file that produced it. The test suite (`pytest`) covers the date folds, the acquisition rules, the exactness of the evidence map, the threshold rule and the nested protocol; `scripts/check_web_demo.py` checks the browser demo against the Python reference. We also verified the released requirements file in a fresh virtual environment: the tests pass and `evaluate.py` returns the same headline AUROC to every digit.
 
-## 8. Potential impact and next evidence
+| External asset | Use | Licence |
+|---|---|---|
+| Organ-on-a-Chip Image Dataset, Movčana et al., Zenodo 10.5281/zenodo.10203721 | all training and evaluation | CC BY 4.0 |
+| DINOv2 ViT-S/14 with registers (Meta AI), via timm | frozen backbone of the released model | Apache-2.0 |
+| MobileNetV2, ResNet-50, ConvNeXt-Tiny ImageNet weights, via torchvision | ablations only | BSD-3-Clause (torchvision) |
+| PyTorch, timm, scikit-learn, NumPy, pandas, Pillow, Streamlit, ONNX Runtime | implementation | BSD / Apache-2.0 / MIT / HPND |
 
-If a future model can achieve a useful PASS coverage at a suitably low false PASS exposure, the system could reduce routine review load while preserving attention for ambiguous images. This is a hypothesis, not a measured impact claim. A prospective pilot should randomize or alternate review sessions, record time per image, disagreements with expert consensus, repeat-capture rates, and downstream tissue-model consequences. It should include new acquisition dates and, ideally, an independent microscope or laboratory. Success would mean measurable operator benefit without increasing the rate of poor-quality samples that proceed unreviewed.
+**AI tools.** AI coding assistants were used to write code and to draft and edit text under the author's direction; all experiments were run and all numbers were produced by the released scripts. The narration of the demo video is a synthetic voice.
 
-The present contribution is a reproducible and falsifiable workflow: explicit source mapping, group-isolated evaluation, calibrated-score intent, action definitions, and honest abstention. A result should only be promoted from prototype evidence to a scientific claim when the complete archive, label join, threshold validation, subgroup uncertainty, and external checks support it.
+## Appendix A. Every acquisition date
 
-## 9. Submission evidence ledger
+Out-of-fold results for each of the 59 dates under the primary protocol. "Good" is the share of frames experts labelled good; "mean P" is the mean predicted probability of good; AUROC is given where a date contains both classes.
 
-| Claim | Present evidence | Release condition |
-| --- | --- | --- |
-| 3,072 metadata rows, six cell lines, 59 prefixes | Local spreadsheet audit | Retain audit output and source checksum |
-| `1 = good`, `2 = bad` | Two preview examples plus full 3,072-row path consistency check | Preserve matching manifest |
-| Trained model performance | Frozen 12-group test: 0.712 balanced accuracy, 0.772 AUROC | External dataset and independent rerun still needed |
-| Calibrated safe PASS threshold | Independent calibration design; current demo default is not safety-validated | Validation-set threshold selection and held-out false PASS interval |
-| REACQUIRE is appropriate | UI acquisition-quality rule is illustrative | Dedicated acquisition-quality labels or expert review study |
-| Public reproducibility | Public GitHub repository with source files, downloadable package, commands and material list | Fresh-install test still required |
-| Competition participation | Kaggle team joined and rules accepted; extra organizer form confirmed received; Writeup saved as draft | Final Writeup submission still required |
-
-## Appendix A. Frozen split and candidate selection details
-
-The three partitions contain 35 training prefixes and 1,804 images, 12 calibration prefixes and 598 images, and 12 test prefixes and 670 images. The prefix is the first six characters of the spreadsheet image ID; the public `reports/frozen_split_groups.json` fixes the exact partition of all 59 prefixes, and the image manifest maps IDs to prefixes. This is an acquisition-date-like proxy, not proof of distinct biological replicates. The selection metric sums calibration balanced accuracy at a 0.5 score threshold and calibration AUROC; the threshold of 0.62 was selected after candidate ranking, using calibration groups only. The following table comes directly from the saved `vision_evaluation.json` artifact.
-
-| ExtraTrees `max_features` | Calibration balanced accuracy at 0.5 | Calibration AUROC | Selection score |
-| --- | ---: | ---: | ---: |
-| `sqrt` | 0.635 | 0.692 | 1.327 |
-| `0.2` | 0.650 | 0.702 | 1.352 |
-| `0.5` (selected) | 0.667 | 0.704 | 1.371 |
-
-Candidate ranking used the same frozen backbone and train/calibration split. This small search does not establish that the selected hyperparameter is globally optimal; it reduces but does not eliminate selection bias. The test partition was evaluated only after selecting the candidate and threshold. The 0.62 threshold controls the reported binary classification metrics, not the human-facing PASS policy. A valid automatic PASS policy would require a separately precommitted calibration target and a held-out estimate with uncertainty.
-
-The calibration partition has 381 good and 217 bad images. At threshold 0.62, its accuracy was 0.674, balanced accuracy 0.664, AUROC 0.704, and Brier score 0.205. The test partition has 357 good and 313 bad images; its accuracy was 0.718, balanced accuracy 0.712, AUROC 0.772, and Brier score 0.204. Different class mixtures and only 12 independent prefixes per partition limit interpretation of these differences. No improvement claim between calibration and test is made.
-
-## Appendix B. Cell-line slices and failure exposure
-
-Cell-line values below are internal test descriptors, not external validation. A high value on a tiny or one-sided slice can be much less informative than a lower value on a larger one. Good is the positive class; `bad called good` is the number of bad-labeled samples classified as good at the frozen 0.62 research threshold.
-
-| Cell line | Test images | Good / bad | Balanced accuracy | AUROC | Bad called good |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| A549 | 173 | 115 / 58 | 0.551 | 0.613 | 40 |
-| CACO | 118 | 28 / 90 | 0.848 | 0.953 | 21 |
-| HPMEC | 286 | 184 / 102 | 0.672 | 0.713 | 47 |
-| HSAEC | 28 | 27 / 1 | 0.370 | 0.741 | 1 |
-| HUVEC | 56 | 3 / 53 | 0.981 | 0.987 | 2 |
-| NHBE | 9 | 0 / 9 | Not estimable | Not estimable | Not promoted |
-
-The overall test confusion matrix is `[[193,120],[69,288]]`, with rows actual bad/good and columns predicted bad/good. Thus 120 of 313 bad-labeled images (38.3%) were classified as good at the research threshold. Among the 408 images classified good, 120 (29.4%) were bad-labeled. These are two different denominators and neither is an operational false-PASS rate, because the released interface does not automatically PASS based on the classifier. They make the decision to retain human review concrete rather than merely cautious prose.
-
-The A549 slice accounts for 40 bad-called-good images out of its 58 bad-labeled images, so a single overall score would hide a material weakness. HSAEC has only one bad test image and the model missed it; a cell-line AUROC or balanced accuracy here is highly unstable. HUVEC has only three good test images, so its apparently strong balanced accuracy must not be extrapolated to another lab. NHBE has only one class in the held-out test, making class-balanced metrics undefined. These limits should direct the next data-collection and evaluation cycle.
-
-## Appendix C. Reproduction and claim audit
-
-The public source package contains the README, pinned requirements, preprocessing and training scripts, frozen manifest, model and data cards, test scripts, evaluation JSON, and demo application. Raw third-party images are excluded. Reproduction starts by obtaining the exact Zenodo files and checking the published archive MD5. The spreadsheet and archive must then pass the one-to-one row/image/label join; the matching summary should report 3,072 successes, zero unmatched rows, zero ambiguous IDs, zero path-label conflicts, and zero decode failures. A run on fewer images is a subset experiment even if its score is numerically higher.
-
-Next, the runner confirms that no six-digit prefix occurs in more than one partition. Feature preprocessing and model fitting use training groups only; candidate ranking and probability calibration use calibration groups only. The chosen threshold and artifact versions are frozen before the test command. Reported test metrics are then compared against the saved `vision_evaluation.json` values and per-line counts, with a tolerance justified by software and hardware determinism. A fresh environment has not yet completed this full rerun, so the package is inspectable but not independently reproduced.
-
-Claim categories should remain distinct: (1) observed source integrity; (2) internal model performance under a proxy grouping; (3) interactive software behavior on synthetic inputs; (4) untested operational benefit. Only the first three have direct evidence here, and the third does not imply biological validity. Time saved, reduced expert error, external transfer, safe automatic acceptance, and the benefit of another image capture remain hypotheses. The precise next experiment is a prospective, blinded operator study with expert adjudication and a new acquisition domain, not another random split of the same archive.
+| Date | Camera | Cell lines | Frames | Good | Mean P | AUROC |
+|---|---|---|---|---|---|---|
+| 220429 | colour | HPMEC, HSAEC | 31 | 77% | 0.69 | 0.97 |
+| 220502 | colour | HSAEC | 8 | 100% | 0.76 | one class |
+| 220503 | colour | HSAEC | 8 | 50% | 0.76 | 1.00 |
+| 220506 | colour | CACO, HSAEC | 15 | 47% | 0.79 | 0.64 |
+| 220512 | colour | CACO, HSAEC | 15 | 53% | 0.51 | 0.91 |
+| 220515 | colour | CACO, HSAEC | 12 | 83% | 0.79 | 0.65 |
+| 220526 | colour | HSAEC | 6 | 50% | 0.39 | 0.44 |
+| 220606 | colour | A549, CACO | 21 | 48% | 0.33 | 0.61 |
+| 220608 | colour | A549, CACO | 23 | 0% | 0.38 | one class |
+| 220609 | colour | A549, CACO | 16 | 69% | 0.80 | 0.78 |
+| 220610 | colour | A549, CACO | 24 | 75% | 0.89 | 0.77 |
+| 220611 | colour | A549, CACO | 24 | 75% | 0.76 | 0.58 |
+| 220612 | colour | A549, CACO | 24 | 83% | 0.76 | 0.93 |
+| 220620 | colour | A549 | 12 | 92% | 0.67 | 1.00 |
+| 220626 | colour | HPMEC, HSAEC | 16 | 100% | 0.76 | one class |
+| 220630 | colour | HSAEC | 19 | 16% | 0.46 | 0.85 |
+| 220706 | colour | HSAEC | 10 | 40% | 0.48 | 1.00 |
+| 220708 | colour | HPMEC, HSAEC | 13 | 54% | 0.30 | 0.95 |
+| 220715 | colour | HPMEC, HSAEC | 15 | 80% | 0.79 | 0.72 |
+| 220716 | colour | HSAEC | 9 | 100% | 0.81 | one class |
+| 220718 | colour | HSAEC | 9 | 0% | 0.26 | one class |
+| 220721 | colour | HSAEC | 6 | 0% | 0.10 | one class |
+| 220722 | colour | HSAEC | 9 | 33% | 0.43 | 1.00 |
+| 220724 | colour | HSAEC | 9 | 11% | 0.26 | 0.75 |
+| 221010 | colour | A549, HPMEC, HSAEC, HUVEC | 99 | 82% | 0.90 | 0.80 |
+| 221012 | colour | HSAEC | 24 | 100% | 0.60 | one class |
+| 221123 | colour | A549 | 12 | 17% | 0.92 | 0.20 |
+| 221214 | colour | HPMEC | 18 | 100% | 0.83 | one class |
+| 221215 | colour | A549, CACO, HUVEC | 22 | 91% | 0.67 | 0.33 |
+| 221219 | colour | A549 | 17 | 35% | 0.56 | 0.82 |
+| 230109 | colour | A549, HPMEC | 107 | 80% | 0.86 | 0.75 |
+| 230110 | colour | A549 | 17 | 65% | 0.53 | 0.65 |
+| 230119 | colour | HPMEC, HSAEC | 70 | 100% | 0.89 | one class |
+| 230123 | colour | HPMEC, HSAEC | 26 | 85% | 0.58 | 0.76 |
+| 230206 | colour | A549, HPMEC | 57 | 91% | 0.70 | 0.44 |
+| 230214 | colour | HPMEC | 48 | 94% | 0.79 | 0.66 |
+| 230215 | colour | HPMEC | 24 | 67% | 0.93 | 0.82 |
+| 230216 | colour | HPMEC | 6 | 100% | 0.85 | one class |
+| 230314 | colour/grey | HPMEC | 50 | 44% | 0.53 | 0.96 |
+| 230315 | grey | HPMEC | 94 | 55% | 0.57 | 0.77 |
+| 230316 | colour | A549, HPMEC, NHBE | 44 | 100% | 0.89 | one class |
+| 230317 | grey | HPMEC, NHBE | 100 | 73% | 0.76 | 0.67 |
+| 230320 | grey | A549, HPMEC, NHBE | 229 | 77% | 0.65 | 0.89 |
+| 230321 | colour | A549, HPMEC | 16 | 100% | 0.96 | one class |
+| 230328 | colour | CACO | 24 | 100% | 0.95 | one class |
+| 230329 | colour | CACO | 12 | 83% | 0.79 | 0.85 |
+| 230403 | colour | CACO | 12 | 25% | 0.54 | 0.96 |
+| 230405 | grey | CACO, HUVEC | 138 | 0% | 0.33 | one class |
+| 230411 | grey | CACO, HUVEC | 79 | 1% | 0.27 | 0.88 |
+| 230419 | grey | CACO, HPMEC | 124 | 6% | 0.27 | 0.45 |
+| 230424 | grey | A549, HPMEC | 108 | 51% | 0.57 | 0.75 |
+| 230425 | grey | A549, CACO, HPMEC | 215 | 55% | 0.36 | 0.86 |
+| 230510 | grey | A549, HPMEC, NHBE | 94 | 63% | 0.55 | 0.95 |
+| 230512 | grey | A549, HPMEC, NHBE | 89 | 38% | 0.57 | 0.92 |
+| 230517 | grey | A549, HPMEC, NHBE | 90 | 60% | 0.59 | 0.93 |
+| 230523 | grey | HPMEC | 111 | 39% | 0.31 | 0.83 |
+| 230524 | grey | HPMEC | 108 | 23% | 0.27 | 0.79 |
+| 230525 | grey | A549, HPMEC | 218 | 69% | 0.58 | 0.84 |
+| 230529 | grey | A549, HPMEC | 216 | 43% | 0.42 | 0.80 |
 
 ## References
 
-1. Movčana, V.; Strods, A.; Narbute, K.; Rūmnieks, F.; Rimša, R.; Mozoļevskis, G.; Ivanovs, M.; Kadiķis, R.; Zviedris, K. G.; Leja, L.; et al. *Organ-On-A-Chip (OOC) Image Dataset for Machine Learning and Tissue Model Evaluation*. **Data** 2024, 9(2), 28. [https://doi.org/10.3390/data9020028](https://doi.org/10.3390/data9020028).
-2. Movčana, V. et al. *Organ-on-a-Chip (OOC) Image Dataset*. Zenodo, 2023. [https://doi.org/10.5281/zenodo.10203721](https://doi.org/10.5281/zenodo.10203721).
-3. 5th Pazhou Algorithm Competition Organizing Committee. *AI4S Open Innovation: AI for Life Science*. Kaggle, 2026. [Competition description](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/overview/description).
-4. Pazhou Algorithm Competition. *Participation Guidelines*. [Official rules](https://www.aicompetition-pz.com/guidelines), accessed 2026-09-28.
+1. Ingber DE. Human organs-on-chips for disease modelling, drug development and personalized medicine. *Nat Rev Genet* 23, 467–491 (2022).
+2. Ewart L, et al. Performance assessment and economic analysis of a human Liver-Chip for predictive toxicology. *Commun Med* 2, 154 (2022).
+3. FDA Modernization Act 2.0, enacted in the Consolidated Appropriations Act, 2023, Pub. L. 117-328 (2022).
+4. U.S. Food and Drug Administration. Roadmap to Reducing Animal Testing in Preclinical Safety Studies (April 2025).
+5. Movčana V, et al. Organ-on-a-Chip (OOC) Image Dataset. Zenodo (2023). doi:10.5281/zenodo.10203721.
+6. Movčana V, et al. Organ-On-A-Chip (OOC) Image Dataset for Machine Learning and Tissue Model Evaluation. *Data* 9(2), 28 (2024). doi:10.3390/data9020028.
+7. Oquab M, et al. DINOv2: Learning Robust Visual Features without Supervision. *Trans Mach Learn Res* (2024).
+8. Darcet T, Oquab M, Mairal J, Bojanowski P. Vision Transformers Need Registers. *ICLR* (2024).
+9. Platt J. Probabilistic outputs for support vector machines and comparisons to regularized likelihood methods. *Advances in Large Margin Classifiers* (1999).
+10. Geifman Y, El-Yaniv R. Selective classification for deep neural networks. *NeurIPS* (2017).
+11. Liu Z, et al. A ConvNet for the 2020s. *CVPR* (2022).
+12. George RM, Kenry. Supervised-Learning-Driven Interrogation of Organ-on-a-Chip Quality from Microscopy Images. *Chem Bio Eng* 2(12), 739–745 (2025). doi:10.1021/cbe.5c00087.
+13. Roberts DR, et al. Cross-validation strategies for data with temporal, spatial, hierarchical, or phylogenetic structure. *Ecography* 40, 913–929 (2017).
+14. Kapoor S, Narayanan A. Leakage and the reproducibility crisis in machine-learning-based science. *Patterns* 4, 100804 (2023).

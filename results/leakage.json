@@ -1,0 +1,23 @@
+{
+ "authors_split": {
+  "test_frames": 656,
+  "C": 0.03,
+  "accuracy": 0.8582317073170732,
+  "auroc": 0.9264039919032152,
+  "precision_good": 0.8578947368421053,
+  "recall_good": 0.8931506849315068,
+  "balanced_accuracy": 0.8537918373111142,
+  "test_dates": 57,
+  "test_dates_also_in_training": 57,
+  "published_baseline": {
+   "accuracy": 0.81,
+   "precision": 0.79,
+   "recall": 0.78,
+   "source": "Mov\u010dana et al., Data 9(2):28, 2024"
+  }
+ },
+ "random_image_folds": {
+  "auroc": 0.9181346771051504,
+  "accuracy": 0.8463541666666666
+ }
+}

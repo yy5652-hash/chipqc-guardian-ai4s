@@ -1,0 +1,120 @@
+{
+ "frames": 360,
+ "limits": {
+  "occluded_block_frac_max": 0.25,
+  "streak_anisotropy_max": 0.3664,
+  "log_sharpness_min": -3.3925,
+  "median_brightness_min": 0.251
+ },
+ "faults": {
+  "defocus": {
+   "unit": "Gaussian sigma, px",
+   "rule": "defocus",
+   "rule_fires_on_originals": 0.013888888888888888,
+   "levels": [
+    {
+     "level": 1,
+     "caught_by_its_rule": 0.13333333333333333,
+     "caught_by_any_rule": 0.16666666666666666
+    },
+    {
+     "level": 2,
+     "caught_by_its_rule": 0.8638888888888889,
+     "caught_by_any_rule": 0.8638888888888889
+    },
+    {
+     "level": 4,
+     "caught_by_its_rule": 1.0,
+     "caught_by_any_rule": 1.0
+    },
+    {
+     "level": 8,
+     "caught_by_its_rule": 1.0,
+     "caught_by_any_rule": 1.0
+    }
+   ]
+  },
+  "motion_streak": {
+   "unit": "streak length, px",
+   "rule": "motion_streak",
+   "rule_fires_on_originals": 0.05555555555555555,
+   "levels": [
+    {
+     "level": 5,
+     "caught_by_its_rule": 0.575,
+     "caught_by_any_rule": 0.6305555555555555
+    },
+    {
+     "level": 10,
+     "caught_by_its_rule": 0.9277777777777778,
+     "caught_by_any_rule": 0.975
+    },
+    {
+     "level": 20,
+     "caught_by_its_rule": 0.9861111111111112,
+     "caught_by_any_rule": 1.0
+    },
+    {
+     "level": 40,
+     "caught_by_its_rule": 0.9861111111111112,
+     "caught_by_any_rule": 1.0
+    }
+   ]
+  },
+  "occlusion": {
+   "unit": "share of field blacked out",
+   "rule": "occluded",
+   "rule_fires_on_originals": 0.030555555555555555,
+   "levels": [
+    {
+     "level": 0.1,
+     "caught_by_its_rule": 0.075,
+     "caught_by_any_rule": 0.1388888888888889
+    },
+    {
+     "level": 0.25,
+     "caught_by_its_rule": 0.5361111111111111,
+     "caught_by_any_rule": 0.5722222222222222
+    },
+    {
+     "level": 0.4,
+     "caught_by_its_rule": 1.0,
+     "caught_by_any_rule": 1.0
+    },
+    {
+     "level": 0.6,
+     "caught_by_its_rule": 1.0,
+     "caught_by_any_rule": 1.0
+    }
+   ]
+  },
+  "under_exposure": {
+   "unit": "exposure gain",
+   "rule": "under_exposed",
+   "rule_fires_on_originals": 0.030555555555555555,
+   "levels": [
+    {
+     "level": 0.7,
+     "caught_by_its_rule": 0.1527777777777778,
+     "caught_by_any_rule": 0.24444444444444444
+    },
+    {
+     "level": 0.5,
+     "caught_by_its_rule": 0.4638888888888889,
+     "caught_by_any_rule": 0.55
+    },
+    {
+     "level": 0.35,
+     "caught_by_its_rule": 0.8694444444444445,
+     "caught_by_any_rule": 0.8777777777777778
+    },
+    {
+     "level": 0.2,
+     "caught_by_its_rule": 1.0,
+     "caught_by_any_rule": 1.0
+    }
+   ]
+  }
+ },
+ "any_rule_fires_on_originals": 0.09166666666666666
+}

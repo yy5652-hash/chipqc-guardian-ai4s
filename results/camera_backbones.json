@@ -1,0 +1,42 @@
+{
+ "convnext_tiny_1344": {
+  "grey_to_colour": 0.558692290007733,
+  "colour_to_grey": 0.680737637722194
+ },
+ "dinov2_vitb14": {
+  "grey_to_colour": 0.6912659100884069,
+  "colour_to_grey": 0.7476822976343087
+ },
+ "main": {
+  "grey_to_colour": 0.7064915250694923,
+  "colour_to_grey": 0.7406378631402626
+ },
+ "dinov2_vits14_2x2": {
+  "grey_to_colour": 0.5885426463519134,
+  "colour_to_grey": 0.740215024483413
+ },
+ "dinov2_vits14_4x4": {
+  "grey_to_colour": 0.7179760486550881,
+  "colour_to_grey": 0.7522405175315043
+ },
+ "mobilenet_v2_1344": {
+  "grey_to_colour": 0.6565197400045981,
+  "colour_to_grey": 0.6909413769199129
+ },
+ "mobilenet_v2_2048": {
+  "grey_to_colour": 0.6962244236838255,
+  "colour_to_grey": 0.7064272434658964
+ },
+ "mobilenet_v2_224crop": {
+  "grey_to_colour": 0.5084279056158171,
+  "colour_to_grey": 0.5471110339795445
+ },
+ "mobilenet_v2_672": {
+  "grey_to_colour": 0.6951376261834598,
+  "colour_to_grey": 0.6417223819719239
+ },
+ "resnet50_1344": {
+  "grey_to_colour": 0.6553284427445816,
+  "colour_to_grey": 0.6593118948061798
+ }
+}

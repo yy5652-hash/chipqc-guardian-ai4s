@@ -1,0 +1,10 @@
+{
+ "machine": "macOS-27.0.1-arm64-arm-64bit",
+ "processor": "arm",
+ "frames": 9,
+ "gpu_s": "0.14",
+ "gpu_device": "mps",
+ "cuda_unavailable": "Torch not compiled with CUDA enabled",
+ "cpu_s": "0.43",
+ "cpu_device": "cpu"
+}

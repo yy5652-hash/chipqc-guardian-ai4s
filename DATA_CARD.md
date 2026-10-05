@@ -1,60 +1,40 @@
-# Data card: OoC brightfield image quality
+# Data card
 
-## Source and scope
+## Source
 
-The project uses the [Organ-on-a-Chip (OOC) Image Dataset](https://doi.org/10.5281/zenodo.10203721) by Movčana and colleagues. Its [data descriptor](https://doi.org/10.3390/data9020028) describes automated brightfield microscopy of OoC samples and quality judgments assigned by a cell-biology expert. The Zenodo record describes `good` and `bad` image folders under supplied train, validation, and test directories. This project audits the spreadsheet and constructs an independent grouped split for evaluating a workflow, rather than assuming that the upstream directory split prevents related acquisitions from crossing partitions.
+**Organ-on-a-Chip (OOC) Image Dataset**, Movčana V., Strods A., Narbute K., Rūmnieks F., Rimša R., Mozolevskis G., Kadiķis R., Ivanovs M. Zenodo, 2023, [doi:10.5281/zenodo.10203721](https://doi.org/10.5281/zenodo.10203721), licence **CC BY 4.0**. Described in *Data* 9(2), 28 (2024), [doi:10.3390/data9020028](https://doi.org/10.3390/data9020028).
 
-Local audit basis: `data/raw/OOC_datasheet.xlsx`, sheet `Main`, seven columns, 3,118 rows after the header of which 3,072 have a non-empty `imageID`. The complete 6.7 GB source archive matched upstream MD5 `8f7e058996203d48eb03b2d86c0a2e4d`; Python ZIP64 validation found no corrupt member, and all 3,072 non-empty spreadsheet IDs matched one decodable image with a consistent path label. Raw images remain excluded from the project repository.
+Brightfield images from an automated microscope on an organ-on-a-chip setup, six human cell lines, with a class label ("good" or "bad" sample quality as assessed by a biology expert), cell type, time after seeding and, for some images, seeding density and flow rate. The images show cultured cell lines; there is no personal, patient or clinical information.
 
-## Observed spreadsheet profile
+## What we checked
 
-| Field | Interpretation | Observed completeness |
-| --- | --- | ---: |
-| `imageID` | Unique string such as `220429_01` | 3,072 / 3,072 |
-| `cell type` | Cell-line code | 3,072 / 3,072 |
-| `seeding density, cells/ml` | Recorded seeding density; spreadsheet values are formatted strings | 2,728 / 3,072 |
-| `time after seeding, h` | Recorded elapsed hours when present | 828 / 3,072 |
-| `day` | Day category in source sheet; meaning must be preserved as supplied | 3,072 / 3,072 |
-| `Decision 1/2 (good/bad)` | Numeric expert decision; archive-preview examples support `1 = good`, `2 = bad` | 3,072 / 3,072 |
-| `flow rate` | Recorded flow rate; text with units | 2,213 / 3,072 |
+- The 6.7 GB archive matches its published MD5 (`8f7e058996203d48eb03b2d86c0a2e4d`).
+- All 3,072 spreadsheet rows match exactly one decodable image; no image ID occurs twice.
+- The folder label of every image (`good` / `bad`) agrees with the spreadsheet label (`1` / `2`).
 
-The missing counts are 344 for density, 2,244 for elapsed hours, and 859 for flow rate. Do not fill them with zero. Missingness may depend on acquisition protocol or cell line and can itself leak collection context; compare image-only, metadata-only, and missingness-aware models on the same held-out groups.
+`scripts/download_data.py` and `scripts/build_manifest.py` repeat these checks and write `data/manifest.csv`.
 
-| Cell-line code in sheet | Rows |
-| --- | ---: |
-| HPMEC | 1,462 |
-| A549 | 775 |
-| CACO | 346 |
-| HSAEC | 244 |
-| NHBE | 138 |
-| HUVEC | 107 |
+## Composition
 
-The `CACO` code is the spreadsheet spelling; the Zenodo description calls the cell line Caco-2. Preserve the raw code and document any display-name normalization. The numeric labels are `1`: 1,727 rows and `2`: 1,345 rows. Their direction was cross-checked against the official Zenodo archive preview: `test/good/A549/0-1_days/221010_82.png` has spreadsheet label `1`, while `test/bad/A549/4+_days/230529_207.png` has label `2`. The subsequent complete row-to-path audit matched all 3,072 rows with no label conflict, confirming the working mapping `1 = good`, `2 = bad` for this archive.
+| Cell line | Frames | Good | Bad | Acquisition dates |
+|---|---|---|---|---|
+| HPMEC | 1,462 | 798 | 664 | 29 |
+| A549 | 775 | 537 | 238 | 24 |
+| Caco-2 | 346 | 109 | 237 | 17 |
+| HSAEC | 244 | 163 | 81 | 21 |
+| NHBE | 138 | 105 | 33 | 6 |
+| HUVEC | 107 | 15 | 92 | 4 |
+| Total | 3,072 | 1,727 | 1,345 | 59 |
 
-All 3,072 image IDs are unique and match a six-digit prefix, underscore, and sequence number. There are 59 unique six-digit prefixes, with group sizes from 6 to 229 rows; 45 prefixes contain both numeric labels. We treat the prefix as a conservative acquisition-date-like grouping key. It is an inferred key from filenames, not independently verified chip, donor, experiment, or biological replicate identity.
+Formats: 2,048 frames at 2056 × 1542 px, greyscale; 934 at 2048 × 1536 px, colour; 87 at 640 × 480 px, colour; 3 at 1536 × 2048 px, colour. Metadata coverage: time after seeding in hours is missing for 2,244 frames (the day of culture is always present), seeding density for 344, flow rate for 859.
 
-## Label and image integrity gate
+## Structure that matters for evaluation
 
-Before model training or a semantic demo:
+- **Acquisition date.** The first six characters of an image ID (`YYMMDD`). Frames of one date are neighbouring fields of the same chips: neighbouring frames share a label 85 % of the time, and 14 of the 59 dates contain a single class. All our evaluations hold out whole dates. The date is a proxy for an acquisition session, not a verified chip or donor identifier.
+- **The authors' folders.** The archive's `train` / `val` / `test` folders split images at random within dates: all 57 dates in `test` also occur in training. We use that split only to compare with the published baseline.
+- **Two cameras.** Grey and colour frames come from different cameras and have different label proportions (grey 46 % good, colour 76 % good). We report performance per camera and across cameras.
+- **What "bad" contains.** Both poor cultures and unusable images (motion smear, blacked-out fields) carry the label "bad".
 
-1. Finish and verify the upstream archive with its Zenodo checksum (`md5:8f7e058996203d48eb03b2d86c0a2e4d`) and verify the spreadsheet checksum (`md5:a3d4875e3da4da83bac45c0ce727cb40`).
-2. Create a one-to-one join from every spreadsheet `imageID` to an archive image path. Log unmatched, duplicate, unreadable, and non-image files. Do not resolve ambiguity by taking the first match.
-3. Use the path's explicit `good`/`bad` folder to confirm the preview-derived mapping `1 = good`, `2 = bad` across every matched row. Independently inspect representative samples of each class and cell line. Record any disagreement; if unresolved, stop semantic training and report neutral numeric labels only.
-4. Detect exact duplicates by cryptographic hash and near duplicates by a declared perceptual-hash or image-similarity procedure. Keep every connected duplicate cluster in one partition, or exclude cross-partition copies and document the count.
-5. Preserve the raw manifest and generate a derived manifest with source path, raw label, verified semantic label, prefix group, cell line, missingness indicators, and split. Keep all transformations and exclusions auditable.
+## What this repository redistributes
 
-## Intended use and limits
-
-Appropriate research use is testing how image models, metadata, calibration, and human review can support quality screening of the source's OoC samples. The data are not a clinical diagnostic cohort, drug response dataset, or proof of tissue function. A classifier trained on expert sample-quality labels cannot separately identify focus errors, lighting artifacts, contamination, or whether taking another photograph will repair the issue. A REACQUIRE suggestion therefore needs an independently defined file/image-usability trigger or a human-confirmed reason.
-
-The six cell lines and acquisition setup limit transfer to other chips, microscopes, media, laboratories, and cell types. No patient-level demographics or private health records are supplied in this spreadsheet. The source paper says the labels were expert judgments; their criteria, disagreement rate, and inter-rater reliability are not available here. Class counts alone do not reveal the prevalence of unacceptable quality in deployment.
-
-## Split and evaluation risks
-
-The upstream folders were reportedly proportionally split by labels, cell lines, and time after seeding. Those properties do not establish independence across near-related images. For this project, assign all images with the same six-digit prefix to one partition and save the manifest before feature fitting. Check class and cell-line coverage in each partition; some strata may be too small for stable metrics. Report group counts alongside image counts. A date-prefix split is conservative but still may leave shared chips or experiments across dates; any stronger provenance found later should replace or augment it.
-
-## Rights, provenance, and citation
-
-The [dataset paper](https://doi.org/10.3390/data9020028) states **“Dataset License: CC-BY-SA”**; the version and the live Zenodo record's full rights text should still be checked before redistributing images or derivatives. The paper's open-access license and this repository's MIT license do not relicense the raw dataset. Check the live source rights and the [competition guidelines](https://www.aicompetition-pz.com/guidelines) before publishing images, image thumbnails, or model weights. The organizer's guidelines limit use of organizer-provided data for contest training and bar commercial use; whether that clause applies to this independently sourced Zenodo copy should be resolved from the applicable terms, not assumed. Link to the source instead of bundling images in a public repository.
-
-Recommended source citation: Movčana, V. et al. *Organ-On-A-Chip (OOC) Image Dataset for Machine Learning and Tissue Model Evaluation*. Data 2024, 9(2), 28. [https://doi.org/10.3390/data9020028](https://doi.org/10.3390/data9020028). Dataset: [https://doi.org/10.5281/zenodo.10203721](https://doi.org/10.5281/zenodo.10203721).
+Derived material only, with attribution: `data/manifest.csv` (one row per frame, from the authors' spreadsheet), embeddings of every frame (`features/`), 144 px grey thumbnails of the reference frames (`models/guardian-v2/atlas/`) and nine example frames resized to 1344 × 1008 px (`examples/`). The full-resolution images are not redistributed; download them from Zenodo.

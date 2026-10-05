@@ -1,0 +1,5 @@
+# Extras for tests, the PDF report and console screenshots.
+-r requirements.txt
+pytest
+reportlab
+playwright

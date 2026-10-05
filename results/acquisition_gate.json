@@ -1,0 +1,41 @@
+{
+ "limits": {
+  "occluded_block_frac_max": 0.25,
+  "streak_anisotropy_max": 0.3664,
+  "log_sharpness_min": -3.3925,
+  "median_brightness_min": 0.251
+ },
+ "overall_bad_rate": 0.43782552083333337,
+ "rules": {
+  "occluded": {
+   "frames": 226,
+   "share": 0.07356770833333333,
+   "expert_bad_rate": 0.7212389380530974
+  },
+  "motion_streak": {
+   "frames": 154,
+   "share": 0.050130208333333336,
+   "expert_bad_rate": 0.8116883116883117
+  },
+  "defocus": {
+   "frames": 62,
+   "share": 0.020182291666666668,
+   "expert_bad_rate": 0.4193548387096774
+  },
+  "under_exposed": {
+   "frames": 160,
+   "share": 0.052083333333333336,
+   "expert_bad_rate": 0.6625
+  },
+  "any_rule": {
+   "frames": 462,
+   "share": 0.150390625,
+   "expert_bad_rate": 0.6688311688311688
+  },
+  "no_rule": {
+   "frames": 2610,
+   "share": 0.849609375,
+   "expert_bad_rate": 0.3969348659003832
+  }
+ }
+}

@@ -1,0 +1,13 @@
+{
+ "adjacent_frames_share_label": 0.8519747759707932,
+ "expected_if_independent": 0.5077313317192925,
+ "mean_run_length": 6.083168316831683,
+ "median_run_length": 2.0,
+ "dates": 59,
+ "dates_all_good": 10,
+ "dates_all_bad": 4,
+ "good_fraction_by_date_min_max": [
+  0.0,
+  1.0
+ ]
+}

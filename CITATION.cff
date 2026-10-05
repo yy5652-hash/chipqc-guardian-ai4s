@@ -1,17 +1,33 @@
 cff-version: 1.2.0
-message: "If you use ChipQC Guardian, cite this software and the separate source dataset and paper."
-title: "ChipQC Guardian: Human-reviewed OoC brightfield image quality control"
-type: software
+message: "If you use this software, please cite it and the dataset it is built on."
+title: "ChipQC Guardian: an auditable quality gate for organ-on-a-chip brightfield imaging"
+version: "2.0.0"
+date-released: "2026-10-09"
 authors:
-  - name: "ChipQC Guardian contributors"
+  - family-names: "Yu"
+    given-names: "Yi"
+    affiliation: "New York University"
+repository-code: "https://github.com/yy5652-hash/chipqc-guardian-ai4s"
 license: MIT
-abstract: >-
-  Research prototype for grouped, calibrated, human-reviewed quality control
-  of organ-on-a-chip brightfield images. Source data are separately cited and
-  are not covered by this software license.
-keywords:
-  - organ-on-a-chip
-  - brightfield microscopy
-  - quality control
-  - selective classification
-  - human review
+references:
+  - type: dataset
+    title: "Organ-on-a-Chip (OOC) Image Dataset"
+    authors:
+      - family-names: "Movčana"
+        given-names: "Valērija"
+      - family-names: "Strods"
+        given-names: "Arnis"
+      - family-names: "Narbute"
+        given-names: "Karīna"
+      - family-names: "Rūmnieks"
+        given-names: "Fēlikss"
+      - family-names: "Rimša"
+        given-names: "Roberts"
+      - family-names: "Mozolevskis"
+        given-names: "Gatis"
+      - family-names: "Kadiķis"
+        given-names: "Roberts"
+      - family-names: "Ivanovs"
+        given-names: "Maksims"
+    doi: "10.5281/zenodo.10203721"
+    year: 2023

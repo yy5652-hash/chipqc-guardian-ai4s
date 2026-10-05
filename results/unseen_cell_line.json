@@ -1,0 +1,127 @@
+{
+ "A549": {
+  "frames": 775,
+  "dates": 24,
+  "auroc_line_never_seen": 0.7620377760042565,
+  "ci95": [
+   0.6609264766468647,
+   0.8462944271628478
+  ],
+  "auroc_line_seen_dates_held_out": 0.7512088634336416
+ },
+ "CACO": {
+  "frames": 346,
+  "dates": 17,
+  "auroc_line_never_seen": 0.9047729648124491,
+  "ci95": [
+   0.8099460907971779,
+   0.970450048635445
+  ],
+  "auroc_line_seen_dates_held_out": 0.9122827391321179
+ },
+ "HPMEC": {
+  "frames": 1462,
+  "dates": 29,
+  "auroc_line_never_seen": 0.8607097563185071,
+  "ci95": [
+   0.8107054150179025,
+   0.9060885606287331
+  ],
+  "auroc_line_seen_dates_held_out": 0.8497844762508682
+ },
+ "HSAEC": {
+  "frames": 244,
+  "dates": 21,
+  "auroc_line_never_seen": 0.871392865257896,
+  "ci95": [
+   0.7761648849677545,
+   0.9469943014651477
+  ],
+  "auroc_line_seen_dates_held_out": 0.865939559191093
+ },
+ "HUVEC": {
+  "frames": 107,
+  "dates": 4,
+  "auroc_line_never_seen": 0.9666666666666667,
+  "ci95": [
+   0.8,
+   0.9937106918238994
+  ],
+  "auroc_line_seen_dates_held_out": 0.9768115942028985
+ },
+ "NHBE": {
+  "frames": 138,
+  "dates": 6,
+  "auroc_line_never_seen": 0.9665223665223666,
+  "ci95": [
+   0.9373015873015874,
+   1.0
+  ],
+  "auroc_line_seen_dates_held_out": 0.9864357864357864
+ },
+ "_comparison": {
+  "representation": "ConvNeXt-Tiny, whole frame, 1344 px",
+  "lines": {
+   "A549": {
+    "frames": 775,
+    "dates": 24,
+    "auroc_line_never_seen": 0.7852761216218331,
+    "ci95": [
+     0.70481643790706,
+     0.8667849157240961
+    ],
+    "auroc_line_seen_dates_held_out": 0.794446270128163
+   },
+   "CACO": {
+    "frames": 346,
+    "dates": 17,
+    "auroc_line_never_seen": 0.8933147524484187,
+    "ci95": [
+     0.8031284875209994,
+     0.9574892291470134
+    ],
+    "auroc_line_seen_dates_held_out": 0.8859985290132777
+   },
+   "HPMEC": {
+    "frames": 1462,
+    "dates": 29,
+    "auroc_line_never_seen": 0.8295059939004137,
+    "ci95": [
+     0.7514692256574788,
+     0.8895910404717623
+    ],
+    "auroc_line_seen_dates_held_out": 0.82556730682127
+   },
+   "HSAEC": {
+    "frames": 244,
+    "dates": 21,
+    "auroc_line_never_seen": 0.8194349768991896,
+    "ci95": [
+     0.7363322231714778,
+     0.8983206862975522
+    ],
+    "auroc_line_seen_dates_held_out": 0.8382185866848444
+   },
+   "HUVEC": {
+    "frames": 107,
+    "dates": 4,
+    "auroc_line_never_seen": 0.9992753623188405,
+    "ci95": [
+     0.9978632478632479,
+     1.0
+    ],
+    "auroc_line_seen_dates_held_out": 1.0
+   },
+   "NHBE": {
+    "frames": 138,
+    "dates": 6,
+    "auroc_line_never_seen": 0.6862914862914863,
+    "ci95": [
+     0.36605096418732785,
+     1.0
+    ],
+    "auroc_line_seen_dates_held_out": 0.9012987012987013
+   }
+  }
+ }
+}

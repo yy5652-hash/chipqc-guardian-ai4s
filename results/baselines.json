@@ -1,0 +1,55 @@
+{
+ "always_good": {
+  "accuracy": 0.5621744791666666,
+  "balanced_accuracy": 0.5,
+  "auroc": 0.5
+ },
+ "metadata_only": {
+  "inputs": "cell line and culture-day bin, no image",
+  "auroc": {
+   "value": 0.5111171143633909,
+   "ci95": [
+    0.4202639783829637,
+    0.6017316226207481
+   ]
+  },
+  "balanced_accuracy": {
+   "value": 0.5078062609376984,
+   "ci95": [
+    0.46958535985099753,
+    0.5556785130003876
+   ]
+  },
+  "accuracy": {
+   "value": 0.5533854166666666,
+   "ci95": [
+    0.4577421222558048,
+    0.6337525503733348
+   ]
+  }
+ },
+ "acquisition_descriptors_only": {
+  "inputs": "five transparent acquisition descriptors",
+  "auroc": {
+   "value": 0.6323305988638785,
+   "ci95": [
+    0.5606403169621436,
+    0.7060773320877595
+   ]
+  },
+  "balanced_accuracy": {
+   "value": 0.5620262483236934,
+   "ci95": [
+    0.5107867392915969,
+    0.6102127991334975
+   ]
+  },
+  "accuracy": {
+   "value": 0.5904947916666666,
+   "ci95": [
+    0.522527283388462,
+    0.6566790354301631
+   ]
+  }
+ }
+}
