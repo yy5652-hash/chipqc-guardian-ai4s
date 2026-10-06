@@ -12,7 +12,7 @@ Before an organ-on-a-chip culture is dosed, stained or measured, someone looks a
 
 ![Frames from acquisition dates the scoring model never saw. Blue pulls the score towards good, red towards bad; each map averages exactly to the frame's score.](reports/figures/fig_evidence.jpg)
 
-**[Try it in your browser]({{ links.demo }})** (the model runs on your machine; nothing is uploaded) · [Technical report (PDF)](ChipQC_Guardian_Technical_Report.pdf) · [Kaggle writeup](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/writeups/chipqc-guardian-reliable-ooc-image-quality-review) · [model card](MODEL_CARD.md) · [data card](DATA_CARD.md)
+**[Watch the {{ links.video_length }} film]({{ links.video }})**{{ ", also on [Bilibili](" + links.video_bilibili + ")" if links.video_bilibili else "" }} ([mp4]({{ links.video_file }})) · **[Try it in your browser]({{ links.demo }})** (the model runs on your machine; nothing is uploaded) · [Technical report (PDF)](ChipQC_Guardian_Technical_Report.pdf) · [Kaggle writeup](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/writeups/chipqc-guardian-reliable-ooc-image-quality-review) · [model card](MODEL_CARD.md) · [data card](DATA_CARD.md)
 
 ## Results
 
@@ -38,7 +38,7 @@ Two things the data do **not** support, and the system therefore does not do: au
 ## Try it
 
 ```bash
-git clone https://github.com/yy5652-hash/chipqc-guardian-ai4s && cd chipqc-guardian-ai4s
+git clone --depth 1 https://github.com/yy5652-hash/chipqc-guardian-ai4s && cd chipqc-guardian-ai4s
 python -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
 
@@ -82,6 +82,8 @@ bash scripts/reproduce_from_images.sh
 | `docs/` | the static browser demo (GitHub Pages): page, JavaScript port, ONNX model, bundled frames, and ONNX Runtime Web in `docs/vendor/`, so the page contacts no other server |
 | `scripts/` | data preparation, training, studies, figures, report |
 
+The clone command above uses `--depth 1`, which fetches only the current version (about 180 MB, mostly the browser demo's ONNX model and the embeddings). The demo film is on the [`media` branch](https://github.com/yy5652-hash/chipqc-guardian-ai4s/tree/media), outside that download.
+
 ## Scope and limits
 
 - The score estimates what cell-biology experts called a good or bad culture in one laboratory's dataset. It is not a measurement of viability, barrier function or drug response, and it is not for clinical or regulatory decisions.
@@ -90,4 +92,4 @@ bash scripts/reproduce_from_images.sh
 
 ## Data, licences and citation
 
-Code: MIT ([LICENSE](LICENSE)). Reference data: Movčana V. et al., *Organ-on-a-Chip (OOC) Image Dataset*, Zenodo, [doi:10.5281/zenodo.10203721](https://doi.org/10.5281/zenodo.10203721), CC BY 4.0, described in *Data* 9(2), 28 (2024). This repository redistributes only derived features, 144 px thumbnails and nine example frames, with attribution. Backbone: DINOv2 ViT-S/14 with registers (Meta AI), Apache-2.0. The browser demo ships ONNX Runtime Web (Microsoft, MIT) unmodified in `docs/vendor/`. See [CITATION.cff](CITATION.cff).
+Code: MIT ([LICENSE](LICENSE)). Reference data: Movčana V. et al., *Organ-on-a-Chip (OOC) Image Dataset*, Zenodo, [doi:10.5281/zenodo.10203721](https://doi.org/10.5281/zenodo.10203721), CC BY 4.0, described in *Data* 9(2), 28 (2024). This repository redistributes only derived features, 144 px thumbnails and nine example frames, with attribution. Backbone: DINOv2 ViT-S/14 with registers (Meta AI), Apache-2.0. The browser demo ships ONNX Runtime Web (Microsoft, MIT) unmodified in `docs/vendor/`. The demo film is narrated by a synthetic voice (Kokoro-82M, Apache-2.0) over a soundtrack synthesised by a script. See [CITATION.cff](CITATION.cff).

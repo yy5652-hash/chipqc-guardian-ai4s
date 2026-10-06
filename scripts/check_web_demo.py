@@ -1,6 +1,7 @@
 """Run the browser demo in headless Chromium on the bundled frames and compare it with the Python reference.
 
     python scripts/check_web_demo.py [--backend wasm|webgpu]    # -> docs/model/browser_parity.json, reports/figures/web_demo.png
+    python scripts/check_web_demo.py --url https://yy5652-hash.github.io/chipqc-guardian-ai4s/    # the published page; prints, writes nothing
 
 Serves docs/ on localhost, opens index.html?selftest=1 and waits for the page to score all bundled frames.
 Needs `pip install playwright && playwright install chromium`.
@@ -19,6 +20,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--backend", default="wasm", choices=["wasm", "webgpu"])
     ap.add_argument("--port", type=int, default=8799)
+    ap.add_argument("--url", help="check a published copy of the demo instead of docs/ (nothing is written)")
     a = ap.parse_args()
     from playwright.sync_api import sync_playwright
 
@@ -31,14 +33,15 @@ def main() -> None:
             errors = []
             page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
             page.on("pageerror", lambda e: errors.append(str(e)))
-            page.goto(f"http://127.0.0.1:{a.port}/index.html?selftest=1&backend={a.backend}")
+            page.goto(f"{a.url.rstrip('/') if a.url else f'http://127.0.0.1:{a.port}'}/index.html?selftest=1&backend={a.backend}")
             try:
                 page.wait_for_function("window.__selftest !== undefined", timeout=1_800_000)
             except Exception:
                 print("page status:", page.inner_text("#status"), "| progress:", page.inner_text("#progress"), "| errors:", errors[:5])
                 raise
             result = page.evaluate("window.__selftest")
-            page.screenshot(path=str(ROOT / "reports/figures/web_demo.png"), full_page=True)
+            if not a.url:
+                page.screenshot(path=str(ROOT / "reports/figures/web_demo.png"), full_page=True)
             browser.close()
     finally:
         server.terminate()
@@ -54,7 +57,8 @@ def main() -> None:
     out = {"backend": result["backend"], "browser": "Chromium (headless)", "frames": rows, "largest_p_good_difference": round(worst_p, 6),
            "largest_descriptor_difference": float(f"{worst_d:.2e}"), "all_gate_outcomes_match": all(r["same_gate_outcome"] for r in rows),
            "mean_seconds_per_frame": round(sum(r["seconds"] for r in rows) / len(rows), 1)}
-    (ROOT / "docs/model/browser_parity.json").write_text(json.dumps(out, indent=1))
+    if not a.url:
+        (ROOT / "docs/model/browser_parity.json").write_text(json.dumps(out, indent=1))
     print(json.dumps({k: v for k, v in out.items() if k != "frames"}))
 
 
