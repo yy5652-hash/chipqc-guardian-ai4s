@@ -4,9 +4,11 @@
 
 ## Demo video
 
-https://youtu.be/TDwHyMEzVOM (also the first item of the media gallery above)
+- YouTube: https://youtu.be/TDwHyMEzVOM (also the first item of the media gallery above)
+- Bilibili: https://www.bilibili.com/video/BV1h1Hd6vESY
+- File: `ChipQC_Guardian_Demo_Video.mp4` (63 MB), attached to this writeup under Project Files
 
-A 3½-minute film made from the real system and the real data: every frame of the dataset sorted by the outcome it received on a day the model never saw, an evidence map building up patch by patch, the acquisition gate reacting to controlled faults, the review console, the browser demo and the command line, then the measured results and the limits. Narration is a synthetic voice and the soundtrack is generated. If YouTube is not reachable from your network, the same film is attached to this writeup under Project Files (`ChipQC_Guardian_Demo_Video.mp4`, 63 MB).
+A 3½-minute film made from the real system and the real data: every frame of the dataset sorted by the outcome it received on a day the model never saw, an evidence map building up patch by patch, the acquisition gate reacting to controlled faults, the review console, the browser demo and the command line, then the measured results and the limits. Narration is a synthetic voice and the soundtrack is generated.
 
 ## Code repository
 

@@ -12,7 +12,7 @@ Before an organ-on-a-chip culture is dosed, stained or measured, someone looks a
 
 ![Frames from acquisition dates the scoring model never saw. Blue pulls the score towards good, red towards bad; each map averages exactly to the frame's score.](reports/figures/fig_evidence.jpg)
 
-**[Watch the 3½-minute film](https://youtu.be/TDwHyMEzVOM)** ([mp4](https://github.com/yy5652-hash/chipqc-guardian-ai4s/raw/media/ChipQC_Guardian_Demo_Video.mp4)) · **[Try it in your browser](https://yy5652-hash.github.io/chipqc-guardian-ai4s/)** (the model runs on your machine; nothing is uploaded) · [Technical report (PDF)](ChipQC_Guardian_Technical_Report.pdf) · [Kaggle writeup](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/writeups/chipqc-guardian-reliable-ooc-image-quality-review) · [model card](MODEL_CARD.md) · [data card](DATA_CARD.md)
+**[Watch the 3½-minute film](https://youtu.be/TDwHyMEzVOM)**, also on [Bilibili](https://www.bilibili.com/video/BV1h1Hd6vESY) ([mp4](https://github.com/yy5652-hash/chipqc-guardian-ai4s/raw/media/ChipQC_Guardian_Demo_Video.mp4)) · **[Try it in your browser](https://yy5652-hash.github.io/chipqc-guardian-ai4s/)** (the model runs on your machine; nothing is uploaded) · [Technical report (PDF)](ChipQC_Guardian_Technical_Report.pdf) · [Kaggle writeup](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/writeups/chipqc-guardian-reliable-ooc-image-quality-review) · [model card](MODEL_CARD.md) · [data card](DATA_CARD.md)
 
 ## Results
 
