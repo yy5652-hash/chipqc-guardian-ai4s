@@ -516,6 +516,53 @@
    ]
   }
  },
+ "dinov2_vitb14_4x4_l4": {
+  "representation": "DINOv2 ViT-B/14, 1792 px, 4 x 4 tiles, last four blocks",
+  "dim": 3072,
+  "auroc": {
+   "value": 0.8700400161011532,
+   "ci95": [
+    0.8379073471010844,
+    0.8998109990226263
+   ]
+  },
+  "balanced_accuracy": {
+   "value": 0.7901061858133342,
+   "ci95": [
+    0.7526097789398484,
+    0.8223593726828904
+   ]
+  },
+  "accuracy": {
+   "value": 0.7965494791666666,
+   "ci95": [
+    0.7661012781288422,
+    0.8284742605609638
+   ]
+  },
+  "brier": {
+   "value": 0.14305054989233512,
+   "ci95": [
+    0.12687516616387562,
+    0.15842484782302702
+   ]
+  },
+  "triage_at_10pct": {
+   "auto_decided": 0.4195963541666667,
+   "error_among_auto": 0.1003381523121054,
+   "passed": 0.2431640625,
+   "false_accept": 0.1034540969123728,
+   "failed": 0.17643229166666666,
+   "false_reject": 0.09565046599731829
+  },
+  "auroc_minus_released": {
+   "value": -0.009669732630450456,
+   "ci95": [
+    -0.022835331615464607,
+    0.0025745953663168417
+   ]
+  }
+ },
  "dinov2_vits14_4x4_l4": {
   "representation": "DINOv2 ViT-S/14, 1792 px, 4 x 4 tiles, last four blocks (released model)",
   "dim": 1536,

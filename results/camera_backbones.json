@@ -7,6 +7,10 @@
   "grey_to_colour": 0.703617781679102,
   "colour_to_grey": 0.7599379069582367
  },
+ "dinov2_vitb14_4x4_l4": {
+  "grey_to_colour": 0.6400610278596359,
+  "colour_to_grey": 0.751926984105677
+ },
  "dinov2_vits14": {
   "grey_to_colour": 0.7245281835851778,
   "colour_to_grey": 0.7622802988826897
