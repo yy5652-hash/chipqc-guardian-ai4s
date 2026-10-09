@@ -36,7 +36,7 @@ async function loadModel() {
     } catch (e) { console.warn(p, "unavailable:", e); }
   }
   if (!state.session) throw new Error("Neither WebGPU nor WebAssembly could run the model in this browser.");
-  $("status").textContent = state.backend === "webgpu" ? "Model ready (running on your GPU through WebGPU)." : "Model ready (running on your CPU through WebAssembly: about ten seconds per frame).";
+  $("status").textContent = state.backend === "webgpu" ? "Model ready (running on your GPU through WebGPU)." : "Model ready (running on your CPU through WebAssembly: about twelve seconds per frame).";
   $("status").classList.add("ready");
 }
 
@@ -67,7 +67,7 @@ async function assess(blob, onTile) {
 function draw(result) {
   const W = 960, H = 720, grey = new Uint8ClampedArray(W * H), frame = new Uint8ClampedArray(W * H * 4);
   const [r, g, b] = result.planes;
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {              // nearest sample of the 1344 x 1008 frame, for display only
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {              // nearest sample of the model's frame, for display only
     const i = Math.floor((y + 0.5) * FRAME_H / H) * FRAME_W + Math.floor((x + 0.5) * FRAME_W / W), o = y * W + x;
     grey[o] = (r[i] * 19595 + g[i] * 38470 + b[i] * 7471 + 0x8000) >> 16;
     frame[o * 4] = r[i]; frame[o * 4 + 1] = g[i]; frame[o * 4 + 2] = b[i]; frame[o * 4 + 3] = 255;

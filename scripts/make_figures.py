@@ -29,6 +29,7 @@ plt.rcParams.update({
     "axes.titlesize": 10, "axes.titleweight": "bold", "axes.titlelocation": "left", "legend.frameon": False, "lines.linewidth": 2.0,
 })
 load = lambda name: json.loads((R / f"{name}.json").read_text())
+MAIN = load("headline")["main"]                          # the released representation
 
 
 def save(fig, name):
@@ -71,7 +72,7 @@ def fig_protocols():
 
 def fig_representations():
     rep = load("representations")
-    order = [k for k in ("mobilenet_v2_224crop", "mobilenet_v2_672", "mobilenet_v2_1344", "mobilenet_v2_2048", "resnet50_1344", "convnext_tiny_1344", "dinov2_vits14_2x2", "dinov2_vits14", "dinov2_vits14_4x4", "dinov2_vitb14") if k in rep]
+    order = [k for k in ("mobilenet_v2_224crop", "mobilenet_v2_672", "mobilenet_v2_1344", "mobilenet_v2_2048", "resnet50_1344", "convnext_tiny_1344", "dinov2_vits14_2x2", "dinov2_vits14", "dinov2_vitb14", "dinov2_vits14_4x4", "dinov2_vits14_l4", "dinov2_vits14_4x4_l4") if k in rep]
     fig, ax = plt.subplots(figsize=(7.6, 0.42 * len(order) + 1.0))
     hbars(ax, [rep[k]["representation"] for k in order], [rep[k]["auroc"]["value"] for k in order], ci=[rep[k]["auroc"]["ci95"] for k in order], xlim=(0.5, 0.95))
     ax.set_xlabel("AUROC on held-out acquisition dates (bar: point estimate, line: 95 % interval over dates)")
@@ -87,10 +88,10 @@ def roc(y, p):
 
 def fig_roc_calibration(man):
     y = man.label_good.to_numpy()
-    main = np.load(R / "oof/dinov2_vits14.npz")
+    main = np.load(R / f"oof/{MAIN}.npz")
     rep = load("representations")
     fig, (a, b) = plt.subplots(1, 2, figsize=(9.2, 3.6), gridspec_kw={"wspace": 0.32})
-    series = [("dinov2_vits14", BLUE, "released model, whole frame"), ("mobilenet_v2_224crop", ORANGE, "224 px centre crop (first submission)")]
+    series = [(MAIN, BLUE, "released model, whole frame"), ("mobilenet_v2_224crop", ORANGE, "224 px centre crop (first submission)")]
     for name, colour, text in series:
         if not (R / f"oof/{name}.npz").exists():
             continue
@@ -118,7 +119,7 @@ def fig_roc_calibration(man):
 
 def fig_risk_coverage(man):
     y = man.label_good.to_numpy()
-    p = np.load(R / "oof/dinov2_vits14.npz")["p_good"]
+    p = np.load(R / f"oof/{MAIN}.npz")["p_good"]
     so = load("system_outcomes")
     fig, (a, b) = plt.subplots(1, 2, figsize=(9.2, 3.3), gridspec_kw={"wspace": 0.35, "width_ratios": [1, 1.15]})
     order = np.argsort(-p)
@@ -260,7 +261,7 @@ def fig_system():
         ax.add_patch(FancyArrowPatch((x0, y0), (x1, y1), arrowstyle="-|>", mutation_scale=11, linewidth=1.1, color=INK2))
     box(0, 9, 15, 13, "Frame", "brightfield field of view\n2056 × 1542 px\n(+ optional cell line, day)")
     box(20, 9, 22, 13, "1  Acquisition gate", "five physical descriptors:\nblacked-out area, motion streak,\ndefocus, exposure")
-    box(47, 9, 26, 13, "2  Culture-quality score", "whole frame at 1344 px, 96 × 72 patch\ndescriptors (DINOv2), linear head: calibrated\nP(good) and an exact evidence map")
+    box(47, 9, 26, 13, "2  Culture-quality score", "whole frame at 1792 px, 128 × 96 patch\ndescriptors (DINOv2), linear head: calibrated\nP(good) and an exact evidence map")
     box(78, 9, 26, 13, "3  Risk-controlled decision", "pass threshold fitted on training dates\nfor a chosen error target;\neverything else goes to a person")
     arrow(15.6, 15.5, 19.6, 15.5); arrow(42.6, 15.5, 46.6, 15.5); arrow(73.6, 15.5, 77.6, 15.5)
     for x, text in ((31, "REACQUIRE\nnot a usable observation"), (91, "PASS   or   REVIEW (queue ordered by score)")):

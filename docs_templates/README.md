@@ -14,6 +14,8 @@ Before an organ-on-a-chip culture is dosed, stained or measured, someone looks a
 
 **[Watch the {{ links.video_length }} film]({{ links.video }})**{{ ", also on [Bilibili](" + links.video_bilibili + ")" if links.video_bilibili else "" }} ([mp4]({{ links.video_file }})) · **[Try it in your browser]({{ links.demo }})** (the model runs on your machine; nothing is uploaded) · [Technical report (PDF)](ChipQC_Guardian_Technical_Report.pdf) · [Kaggle writeup](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/writeups/chipqc-guardian-reliable-ooc-image-quality-review) · [model card](MODEL_CARD.md) · [data card](DATA_CARD.md)
 
+The film was recorded with the previous version of the model (3 × 3 tiles, AUROC {{ f3(REP.dinov2_vits14.auroc.value) }}); the system and the workflow it shows are unchanged, and the numbers below are those of the released model.
+
 ## Results
 
 Measured on the public [Organ-on-a-Chip Image Dataset](https://doi.org/10.5281/zenodo.10203721) (3,072 frames, six cell lines, 59 acquisition dates). **Whole acquisition dates are held out**: frames from one date are not independent, so a random split flatters any model. Regularisation, calibration and thresholds are chosen inside the training dates; intervals resample dates.
@@ -22,7 +24,8 @@ Measured on the public [Organ-on-a-Chip Image Dataset](https://doi.org/10.5281/z
 |---|---|
 | AUROC, dates held out | **{{ f3(H.auroc.value) }}** (95 % interval {{ ci(H.auroc) }}) |
 | Same protocol, 224 px centre crop (our first submission) | {{ f3(REP.mobilenet_v2_224crop.auroc.value) }} |
-| Frozen 12-date test split of our first submission (first submission: {{ f3(FS.first_submission.auroc) }}) | {{ f3(FS.dinov2_vits14.auroc) }} |
+| Our second submission, same protocol (3 × 3 tiles, last block only) | {{ f3(REP.dinov2_vits14.auroc.value) }}; the released model gains {{ gain(REP.dinov2_vits14.auroc_minus_released) }} |
+| Frozen 12-date test split of our first submission (first: {{ f3(FS.first_submission.auroc) }}, second: {{ f3(FS.dinov2_vits14.auroc) }}) | {{ f3(FS.dinov2_vits14_4x4_l4.auroc) }} |
 | Accuracy on the dataset authors' own split (published baseline 0.81) | {{ f2(LK.authors_split.accuracy) }} |
 | Cell line withheld from training: largest AUROC change over six lines | {{ f2(max_line_drop) }} |
 | Different camera, no local labels: AUROC | {{ f2(CTX.main.grey_to_colour) }} and {{ f2(CTX.main.colour_to_grey) }} (same camera: {{ f2(CT.within_camera_dates_held_out.colour.auroc) }} and {{ f2(CT.within_camera_dates_held_out.grey.auroc) }}) |
@@ -62,7 +65,7 @@ python scripts/build_report.py       # the report, README and model card, filled
 pytest -q                            # the unit tests
 ```
 
-The full evaluation takes about 2 minutes on an Apple-silicon laptop and much longer on a small cloud machine: on 4 x86 cores the headline analysis alone took about 5 minutes and the full run more than 40. `evaluate.py` needs no images: `features/` holds the embeddings of all 3,072 frames for every representation in the comparison, and the acquisition descriptors. To rebuild those from the raw data (6.7 GB download, about 15 minutes on a laptop GPU):
+The full evaluation takes about 3 minutes on an Apple-silicon desktop and much longer on a small cloud machine (tens of minutes on 4 x86 cores); `--only headline` is the quick check there. `evaluate.py` needs no images: `features/` holds the embeddings of all 3,072 frames for every representation in the comparison, and the acquisition descriptors. To rebuild those from the raw data (6.7 GB download, about 15 minutes on a laptop GPU):
 
 ```bash
 bash scripts/reproduce_from_images.sh
@@ -83,7 +86,7 @@ bash scripts/reproduce_from_images.sh
 | `docs/` | the static browser demo (GitHub Pages): page, JavaScript port, ONNX model, bundled frames, and ONNX Runtime Web in `docs/vendor/`, so the page contacts no other server |
 | `scripts/` | data preparation, training, studies, figures, report |
 
-The clone command above uses `--depth 1`, which fetches only the current version (about 180 MB, mostly the browser demo's ONNX model and the embeddings). The demo film is on the [`media` branch](https://github.com/yy5652-hash/chipqc-guardian-ai4s/tree/media), outside that download.
+The clone command above uses `--depth 1`, which fetches only the current version (about 250 MB, mostly the browser demo's ONNX model and the embeddings). The demo film is on the [`media` branch](https://github.com/yy5652-hash/chipqc-guardian-ai4s/tree/media), outside that download.
 
 ## Scope and limits
 

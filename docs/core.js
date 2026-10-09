@@ -1,7 +1,7 @@
 // ChipQC Guardian, browser port of the frame pipeline. Pure functions, no DOM: the same code runs in the page
 // and in the Node parity test. Everything mirrors src/chipqc/{frames,descriptors,guardian}.py.
 
-export const FRAME_W = 1344, FRAME_H = 1008, TILE_W = 448, TILE_H = 336, GRID = 3, PATCH = 14;
+export const FRAME_W = 1792, FRAME_H = 1344, TILE_W = 448, TILE_H = 336, GRID = 4, PATCH = 14;
 export const GREY_W = 1024, GREY_H = 768;
 const MEAN = [0.485, 0.456, 0.406], STD = [0.229, 0.224, 0.225];
 const BLOCK = 32, DARK_BLOCK = 0.12;
@@ -159,9 +159,9 @@ export function tileTensor(planes, row, col) {
   return out;
 }
 
-export const MAP_W = (GRID * TILE_W) / PATCH, MAP_H = (GRID * TILE_H) / PATCH;      // 96 x 72 patches
+export const MAP_W = (GRID * TILE_W) / PATCH, MAP_H = (GRID * TILE_H) / PATCH;      // 128 x 96 patches
 
-/** Nine tile outputs (24 x 32 each, row-major tiles) -> one 72 x 96 evidence map and the frame's P(good). */
+/** Sixteen tile outputs (24 x 32 each, row-major tiles) -> one 96 x 128 evidence map and the frame's P(good). */
 export function assemble(tileEvidence) {
   const th = TILE_H / PATCH, tw = TILE_W / PATCH, map = new Float32Array(MAP_W * MAP_H);
   let sum = 0;

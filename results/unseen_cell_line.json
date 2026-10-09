@@ -2,62 +2,62 @@
  "A549": {
   "frames": 775,
   "dates": 24,
-  "auroc_line_never_seen": 0.7620377760042565,
+  "auroc_line_never_seen": 0.7894465048589268,
   "ci95": [
-   0.6609264766468647,
-   0.8462944271628478
+   0.7043029194813013,
+   0.8653982096006816
   ],
-  "auroc_line_seen_dates_held_out": 0.7512088634336416
+  "auroc_line_seen_dates_held_out": 0.7929048714457849
  },
  "CACO": {
   "frames": 346,
   "dates": 17,
-  "auroc_line_never_seen": 0.9047729648124491,
+  "auroc_line_never_seen": 0.9141408276235823,
   "ci95": [
-   0.8099460907971779,
-   0.970450048635445
+   0.8231107556133851,
+   0.9704892888130443
   ],
-  "auroc_line_seen_dates_held_out": 0.9122827391321179
+  "auroc_line_seen_dates_held_out": 0.9057020090581813
  },
  "HPMEC": {
   "frames": 1462,
   "dates": 29,
-  "auroc_line_never_seen": 0.8607097563185071,
+  "auroc_line_never_seen": 0.8621836971947944,
   "ci95": [
-   0.8107054150179025,
-   0.9060885606287331
+   0.8120327786820464,
+   0.9082162198917842
   ],
-  "auroc_line_seen_dates_held_out": 0.8497844762508682
+  "auroc_line_seen_dates_held_out": 0.8661450312528308
  },
  "HSAEC": {
   "frames": 244,
   "dates": 21,
-  "auroc_line_never_seen": 0.871392865257896,
+  "auroc_line_never_seen": 0.8845716882526697,
   "ci95": [
-   0.7761648849677545,
-   0.9469943014651477
+   0.7916654880627186,
+   0.9496541633935585
   ],
-  "auroc_line_seen_dates_held_out": 0.865939559191093
+  "auroc_line_seen_dates_held_out": 0.8726047110505188
  },
  "HUVEC": {
   "frames": 107,
   "dates": 4,
-  "auroc_line_never_seen": 0.9666666666666667,
+  "auroc_line_never_seen": 0.9797101449275363,
   "ci95": [
-   0.8,
-   0.9937106918238994
+   0.8666666666666667,
+   1.0
   ],
-  "auroc_line_seen_dates_held_out": 0.9768115942028985
+  "auroc_line_seen_dates_held_out": 0.9884057971014493
  },
  "NHBE": {
   "frames": 138,
   "dates": 6,
-  "auroc_line_never_seen": 0.9665223665223666,
+  "auroc_line_never_seen": 0.9468975468975469,
   "ci95": [
-   0.9373015873015874,
+   0.9130095424288973,
    1.0
   ],
-  "auroc_line_seen_dates_held_out": 0.9864357864357864
+  "auroc_line_seen_dates_held_out": 0.9821067821067822
  },
  "_comparison": {
   "representation": "ConvNeXt-Tiny, whole frame, 1344 px",

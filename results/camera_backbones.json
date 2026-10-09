@@ -7,7 +7,7 @@
   "grey_to_colour": 0.6912659100884069,
   "colour_to_grey": 0.7476822976343087
  },
- "main": {
+ "dinov2_vits14": {
   "grey_to_colour": 0.7064915250694923,
   "colour_to_grey": 0.7406378631402626
  },
@@ -18,6 +18,14 @@
  "dinov2_vits14_4x4": {
   "grey_to_colour": 0.7179760486550881,
   "colour_to_grey": 0.7522405175315043
+ },
+ "main": {
+  "grey_to_colour": 0.7237862352916589,
+  "colour_to_grey": 0.7540220010336055
+ },
+ "dinov2_vits14_l4": {
+  "grey_to_colour": 0.6903619871674294,
+  "colour_to_grey": 0.7243906952483865
  },
  "mobilenet_v2_1344": {
   "grey_to_colour": 0.6565197400045981,

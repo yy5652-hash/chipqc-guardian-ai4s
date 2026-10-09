@@ -1,5 +1,5 @@
 {
- "note": "9 real frames from acquisition dates 230524 and 230425 of the Organ-on-a-Chip Image Dataset (Mov\u010dana et al., Zenodo, doi:10.5281/zenodo.10203721, CC BY 4.0), resized to 1344 \u00d7 1008 px. They are scored by a model fitted without those two dates.",
+ "note": "9 real frames from acquisition dates 230524 and 230425 of the Organ-on-a-Chip Image Dataset (Mov\u010dana et al., Zenodo, doi:10.5281/zenodo.10203721, CC BY 4.0), resized to 1792 \u00d7 1344 px. They are scored by a model fitted without those two dates.",
  "frames": [
   {
    "file": "230425_21.png",
@@ -16,9 +16,9 @@
    "culture_day_bin": "4+"
   },
   {
-   "file": "230425_70.png",
-   "image_id": "230425_70",
-   "cell_line": "A549",
+   "file": "230425_50.png",
+   "image_id": "230425_50",
+   "cell_line": "HPMEC",
    "expert_label": "good",
    "culture_day_bin": "4+"
   },
@@ -37,11 +37,11 @@
    "culture_day_bin": "2-3"
   },
   {
-   "file": "230524_32.png",
-   "image_id": "230524_32",
+   "file": "230425_141.png",
+   "image_id": "230425_141",
    "cell_line": "HPMEC",
    "expert_label": "good",
-   "culture_day_bin": "2-3"
+   "culture_day_bin": "4+"
   },
   {
    "file": "230524_30.png",

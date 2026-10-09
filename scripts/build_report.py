@@ -55,8 +55,10 @@ def namespace():
     labels = {"mobilenet_v2_224crop": "MobileNetV2, 224 px centre crop (first submission)", "mobilenet_v2_672": "MobileNetV2, whole frame, 672 px",
               "mobilenet_v2_1344": "MobileNetV2, whole frame, 1344 px", "mobilenet_v2_2048": "MobileNetV2, whole frame, 2048 px (native)",
               "resnet50_1344": "ResNet-50, whole frame, 1344 px", "convnext_tiny_1344": "ConvNeXt-Tiny, whole frame, 1344 px",
-              "dinov2_vits14_2x2": "DINOv2 ViT-S/14, whole frame at 896 px, 2 × 2 tiles", "dinov2_vits14": "**DINOv2 ViT-S/14, whole frame at 1344 px, 3 × 3 tiles (released model)**",
-              "dinov2_vits14_4x4": "DINOv2 ViT-S/14, whole frame at 1792 px, 4 × 4 tiles", "dinov2_vitb14": "DINOv2 ViT-B/14, whole frame at 1344 px, 3 × 3 tiles"}
+              "dinov2_vits14_2x2": "DINOv2 ViT-S/14, whole frame at 896 px, 2 × 2 tiles", "dinov2_vits14": "DINOv2 ViT-S/14, whole frame at 1344 px, 3 × 3 tiles (second submission)",
+              "dinov2_vitb14": "DINOv2 ViT-B/14, whole frame at 1344 px, 3 × 3 tiles", "dinov2_vits14_4x4": "DINOv2 ViT-S/14, whole frame at 1792 px, 4 × 4 tiles",
+              "dinov2_vits14_l4": "DINOv2 ViT-S/14, 1344 px, 3 × 3 tiles, last four blocks",
+              "dinov2_vits14_4x4_l4": "**DINOv2 ViT-S/14, 1792 px, 4 × 4 tiles, last four blocks (released model)**"}
 
     def representation_rows():
         rows = []
@@ -68,6 +70,9 @@ def namespace():
 
     def diff(d):                            # a signed difference with the interval of the difference itself
         return f"{signed(d['value'])} ({signed(d['ci95'][0])} to {signed(d['ci95'][1])})"
+
+    def gain(d):                            # the released model's advantage over a row of the comparison, with its interval
+        return f"{-d['value']:.3f} ({-d['ci95'][1]:.3f} to {-d['ci95'][0]:.3f})"
 
     def outcome_rows():
         rows = []
@@ -106,13 +111,13 @@ def namespace():
         H=H, REP=REP, LK=load("leakage"), B=load("baselines"), U=load("unseen_cell_line"), LS=load("label_structure"), G=load("acquisition_gate"),
         S05=SO["0.05"].summary, S10=SO["0.1"].summary, S15=SO["0.15"].summary, S20=SO["0.2"].summary, CT=CT, CTC=CT.adaptation.colour.rows, CTG=CT.adaptation.grey.rows, CTX=load("camera_backbones"), D=D,
         DS=Box({k: [lv["caught_by_its_rule"] for lv in v["levels"]] for k, v in D["faults"].items()}),
-        IMG=Box(grey=f"{grey:,}", colour=f"{sum(f.frames for f in IMG.image_formats) - grey:,}"), RT=runtime, cells="6,912",
+        IMG=Box(grey=f"{grey:,}", colour=f"{sum(f.frames for f in IMG.image_formats) - grey:,}"), RT=runtime, cells="12,288",
         f1=lambda x: f"{x:.1f}", f2=lambda x: f"{x:.2f}", f3=lambda x: f"{x:.3f}", pct=lambda x: f"{x:.0%}".replace("%", " %"), pct1=lambda x: f"{x:.1%}".replace("%", " %"),
         ci=lambda d: f"{d['ci95'][0]:.3f}–{d['ci95'][1]:.3f}", ci2=lambda c: f"{c[0]:.2f}–{c[1]:.2f}", ci3=lambda c: f"{c[0]:.3f}–{c[1]:.3f}", int=lambda x: f"{int(round(x)):,}",
         f6=lambda x: f"{x:.6f}", minutes=lambda frames, s: f"{frames * float(s) / 60:.0f}", UC=wrap(json.loads((R / "unseen_cell_line.json").read_text()).get("_comparison", {}).get("lines", {})),
         sup_g2c=sup("grey_to_colour"), sup_c2g=sup("colour_to_grey"),
         WEB=wrap(json.loads((ROOT / "docs/model/browser_parity.json").read_text())), FS=load("first_submission_split"), links=wrap(json.loads((ROOT / "docs_templates/links.json").read_text())), pages=PAGES[0],
-        representation_rows=representation_rows, outcome_rows=outcome_rows, diff=diff, signed=signed, main=main, M=wrap(json.loads((ROOT / "models/guardian-v2/model.json").read_text())),
+        representation_rows=representation_rows, outcome_rows=outcome_rows, diff=diff, gain=gain, signed=signed, main=main, M=wrap(json.loads((ROOT / "models/guardian-v2/model.json").read_text())),
         line_aurocs=", ".join(f"{k} {v['auroc']:.2f}" for k, v in H["by_cell_line"].items()),
         n_tests=sum(len(re.findall(r"^def test_", p.read_text(), flags=re.M)) for p in (ROOT / "tests").glob("test_*.py")),
         max_line_drop=max(abs(v["auroc_line_seen_dates_held_out"] - v["auroc_line_never_seen"]) for k, v in json.loads((R / "unseen_cell_line.json").read_text()).items() if not k.startswith("_")),

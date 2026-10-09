@@ -15,13 +15,14 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+from chipqc.backbone import BACKBONES  # noqa: E402
 from chipqc.data import load_manifest  # noqa: E402
 from chipqc.protocol import C_GRID, OFFERED_TARGETS, date_folds, fit_head, fit_platt, head_logits, sigmoid  # noqa: E402
 from chipqc.triage import choose_thresholds  # noqa: E402
 from sklearn.metrics import roc_auc_score  # noqa: E402
 
 ap = argparse.ArgumentParser(description=__doc__)
-ap.add_argument("--features", type=Path, default=ROOT / "features/dinov2_vits14.npz")
+ap.add_argument("--features", type=Path, default=ROOT / "features/dinov2_vits14_4x4_l4.npz")
 ap.add_argument("--descriptors", type=Path, default=ROOT / "features/acquisition_descriptors.csv")
 ap.add_argument("--manifest", type=Path, default=ROOT / "data/manifest.csv")
 ap.add_argument("--out", type=Path, default=ROOT / "models/guardian-v2")
@@ -74,7 +75,8 @@ def evaluation_summary():
 
 spec = {
     "name": a.out.name, "created_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "backbone": str(f["backbone"]), "frame_size": [1344, 1008],
+    "backbone": str(f["backbone"]), "tile": list(BACKBONES[str(f["backbone"])]["tile"]), "grid": list(BACKBONES[str(f["backbone"])]["grid"]),
+    "frame_size": [BACKBONES[str(f["backbone"])]["tile"][i] * BACKBONES[str(f["backbone"])]["grid"][i] for i in (0, 1)],
     "cell_weights": [round(float(v), 8) for v in cell_weights], "cell_bias": round(cell_bias, 8),
     "platt": [round(A, 6), round(B, 6)], "thresholds": thresholds, "default_error_target": a.default_error_target,
     "acquisition_limits": limits, "atlas": a.atlas, "held_out_dates": list(a.exclude_dates),

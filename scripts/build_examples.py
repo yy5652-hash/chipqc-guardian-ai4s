@@ -20,7 +20,7 @@ from chipqc.descriptors import acquisition_flags  # noqa: E402
 ap = argparse.ArgumentParser(description=__doc__)
 ap.add_argument("--images", type=Path, default=ROOT / "data/raw/OOC_image_dataset")
 ap.add_argument("--model", type=Path, default=ROOT / "models/guardian-v2-demo")
-ap.add_argument("--features", type=Path, default=ROOT / "features/dinov2_vits14.npz")
+ap.add_argument("--features", type=Path, default=ROOT / "features/dinov2_vits14_4x4_l4.npz")
 a = ap.parse_args()
 
 spec = json.loads((a.model / "model.json").read_text())
@@ -53,10 +53,10 @@ for f in list(out.glob("*.jpg")) + list(out.glob("*.png")):
 frames = []
 for r in picks.itertuples():
     with Image.open(a.images / r.path) as im:                      # lossless, so the bundled copy scores like the original
-        im.convert("RGB").resize((1344, 1008), Image.BICUBIC).save(out / f"{r.image_id}.png", optimize=True)
+        im.convert("RGB").resize(tuple(spec["frame_size"]), Image.BICUBIC).save(out / f"{r.image_id}.png", optimize=True)
     frames.append({"file": f"{r.image_id}.png", "image_id": r.image_id, "cell_line": r.cell_line, "expert_label": "good" if r.label_good else "bad", "culture_day_bin": r.day_bin})
 note = (f"{len(frames)} real frames from acquisition dates {' and '.join(spec['held_out_dates'])} of the Organ-on-a-Chip Image Dataset (Movčana et al., Zenodo, "
-        "doi:10.5281/zenodo.10203721, CC BY 4.0), resized to 1344 × 1008 px. They are scored by a model fitted without those two dates.")
+        f"doi:10.5281/zenodo.10203721, CC BY 4.0), resized to {spec['frame_size'][0]} × {spec['frame_size'][1]} px. They are scored by a model fitted without those two dates.")
 (out / "examples.json").write_text(json.dumps({"note": note, "frames": frames}, indent=1))
 print(pd.DataFrame(frames).assign(p=picks.p.round(2).to_numpy(), outcome=picks.outcome.to_numpy())[["image_id", "cell_line", "expert_label", "p", "outcome"]].to_string(index=False))
 print(dict(held.outcome.value_counts()), "of", len(held), "held-out frames | pass threshold", t_pass)

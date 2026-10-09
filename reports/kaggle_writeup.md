@@ -6,7 +6,7 @@
 
 器官芯片培养在给药、染色或测量之前，都要有人看明场图像，判断培养是否可用。这个判断靠肉眼，因人而异，而且几乎不留记录。**ChipQC Guardian** 把它变成有记录、可核查的一步：每一帧图像得到三种结果之一，并附上依据。**PASS** 表示无需人工查看、直接使用；**REACQUIRE** 表示这不是有效观测，应趁芯片还在显微镜上重拍；**REVIEW** 表示交给人判断，最可疑的排在最前。
 
-我们在公开的器官芯片图像数据集（3,072 帧，6 种细胞系，59 个采集日期）上按**整个采集日期**留出测试，因为同一天拍摄的图像彼此并不独立。模型 AUROC 为 **0.852**（95% 区间 0.821–0.883）。在 10% 的错误目标下，18% 的帧自动放行，其中专家判为不良的占 8.6%；15% 的帧在拍摄当时就被要求重拍。每个判断都写入审计记录（结果、校准概率、采集指标、模型版本、图像哈希），可以作为器官芯片数据资产和数字孪生的数据质量层。以下为英文详述。
+我们在公开的器官芯片图像数据集（3,072 帧，6 种细胞系，59 个采集日期）上按**整个采集日期**留出测试，因为同一天拍摄的图像彼此并不独立。模型 AUROC 为 **0.872**（95% 区间 0.842–0.900）。在 10% 的错误目标下，26% 的帧自动放行，其中专家判为不良的占 9.6%；15% 的帧在拍摄当时就被要求重拍。每个判断都写入审计记录（结果、校准概率、采集指标、模型版本、图像哈希），可以作为器官芯片数据资产和数字孪生的数据质量层。以下为英文详述。
 
 ## Demo video
 
@@ -14,25 +14,25 @@
 - Bilibili: https://www.bilibili.com/video/BV1h1Hd6vESY
 - File: `ChipQC_Guardian_Demo_Video.mp4` (63 MB), attached to this writeup under Project Files
 
-A 3½-minute film made from the real system and the real data: every frame of the dataset sorted by the outcome it received on a day the model never saw, an evidence map building up patch by patch, the acquisition gate reacting to controlled faults, the review console, the browser demo and the command line, then the measured results and the limits. Narration is a synthetic voice and the soundtrack is generated.
+A 3½-minute film made from the real system and the real data: every frame of the dataset sorted by the outcome it received on a day the model never saw, an evidence map building up patch by patch, the acquisition gate reacting to controlled faults, the review console, the browser demo and the command line, then the measured results and the limits. Narration is a synthetic voice and the soundtrack is generated. The film was recorded with the previous version of the model (3 × 3 tiles, AUROC 0.852); the system, the workflow and the limits it shows are unchanged, and the numbers in this writeup and in the report are those of the released model.
 
 ## Code repository
 
 https://github.com/yy5652-hash/chipqc-guardian-ai4s
 
-Source, released model, embeddings of all 3,072 frames, result files, figures, tests and the scripts that regenerate every number. `python evaluate.py` reproduces the full evaluation without downloading any images: about two minutes on an Apple-silicon laptop, longer on a small cloud machine (`--only headline` reproduces the headline numbers in about five minutes on 4 x86 cores).
+Source, released model, embeddings of all 3,072 frames, result files, figures, tests and the scripts that regenerate every number. `python evaluate.py` reproduces the full evaluation without downloading any images: about three minutes on an Apple-silicon desktop, longer on a small cloud machine (`--only headline` is the quick check there).
 
 ## Project summary
 
 Before an organ-on-a-chip (OoC) culture is dosed, stained or measured, someone looks at brightfield frames and decides whether the culture is usable. That decision is made by eye, differs between people and is rarely recorded. **ChipQC Guardian** turns it into a logged, checkable step: every frame gets **PASS** (use it without a person looking), **REACQUIRE** (not a usable observation: image it again) or **REVIEW** (a person decides, most suspicious first), with the evidence behind the outcome.
 
-An acquisition gate measures five physical properties of the image. A culture-quality model reads the whole 2056 × 1542 px frame with a frozen self-supervised vision transformer (DINOv2 ViT-S/14) and a linear classifier, so each of the 6,912 image patches has an exact share of the score, drawn as an evidence map. A frame passes automatically only above a threshold fitted on other acquisition dates to keep the share of bad frames among passed frames under a chosen target.
+An acquisition gate measures five physical properties of the image. A culture-quality model reads the whole 2056 × 1542 px frame with a frozen self-supervised vision transformer (DINOv2 ViT-S/14), read as 4 × 4 tiles at 1792 px, and a linear classifier on the last four blocks, so each of the 12,288 image patches has an exact share of the score, drawn as an evidence map. A frame passes automatically only above a threshold fitted on other acquisition dates to keep the share of bad frames among passed frames under a chosen target.
 
-On the public Organ-on-a-Chip Image Dataset (3,072 frames, six cell lines, 59 acquisition dates) we hold out **whole acquisition dates**, because frames from one day are not independent. The model reaches an AUROC of **0.852** (95 % interval 0.821–0.883); on the frozen test dates of our first version it scores 0.859 against that version's 0.772. At a 10 % target, 18 % of frames pass with 8.6 % bad among them and 15 % are sent back for re-imaging. No cell line loses accuracy when withheld from training; a different camera does, until local labels are added; automatic rejection is not supported by the data. We report all three. The value is a quality decision with a stated error rate, visible evidence and an audit record that travels with the image.
+On the public Organ-on-a-Chip Image Dataset (3,072 frames, six cell lines, 59 acquisition dates) we hold out **whole acquisition dates**, because frames from one day are not independent. The model reaches an AUROC of **0.872** (95 % interval 0.842–0.900); our previous version scored 0.852 under the same protocol, and on the frozen test dates of our first version the model scores 0.884 against that version's 0.772. At a 10 % target, 26 % of frames pass with 9.6 % bad among them and 15 % are sent back for re-imaging. A cell line withheld from training loses at most 0.04 AUROC; a different camera loses about ten points, until local labels are added; automatic rejection is not supported by the data. We report all three. The value is a quality decision with a stated error rate, visible evidence and an audit record that travels with the image.
 
 ## Technical report
 
-[ChipQC Guardian technical report (PDF, 18 pages)](https://github.com/yy5652-hash/chipqc-guardian-ai4s/blob/main/ChipQC_Guardian_Technical_Report.pdf), also attached to this writeup under Project Files. It covers the problem, data and compliance, system design, experimental protocol, all results, reliability analysis, impact, reproduction and the licences of every external asset. Its main results, the reasons behind the design and the limits are summarised here.
+[ChipQC Guardian technical report (PDF, 19 pages)](https://github.com/yy5652-hash/chipqc-guardian-ai4s/blob/main/ChipQC_Guardian_Technical_Report.pdf), also attached to this writeup under Project Files. It covers the problem, data and compliance, system design, experimental protocol, all results, reliability analysis, impact, reproduction and the licences of every external asset. Its main results, the reasons behind the design and the limits are summarised here.
 
 ### Results at a glance
 
@@ -40,27 +40,29 @@ All numbers are for acquisition dates the model never saw; intervals resample da
 
 | | |
 |---|---|
-| AUROC | **0.852** (0.821–0.883) |
+| AUROC | **0.872** (0.842–0.900) |
+| Same protocol, our previous version (3 × 3 tiles, last block only) | 0.852 |
 | Same protocol, 224 px centre crop (the representation of our first version) | 0.738 |
-| Accuracy on the dataset authors' own split (published baseline: 0.81) | 0.86 |
-| Largest AUROC change when a cell line is withheld from training (six lines) | 0.02 |
-| Different camera without local labels | 0.71 / 0.74 (same camera: 0.79 / 0.84) |
-| Passed automatically at a 10 % / 20 % target | 18 % / 47 % |
-| Bad among passed at a 10 % / 20 % target | 8.6 % / 17.1 % |
+| Accuracy on the dataset authors' own split (published baseline: 0.81) | 0.88 |
+| Largest AUROC change when a cell line is withheld from training (six lines) | 0.04 |
+| Different camera without local labels | 0.72 / 0.75 (same camera: 0.82 / 0.87) |
+| Passed automatically at a 10 % / 20 % target | 26 % / 51 % |
+| Bad among passed at a 10 % / 20 % target | 9.6 % / 17.5 % |
 | Controlled faults caught by the acquisition gate | defocus 4 px 100 %, 20 px motion 99 %, 40 % occlusion 100 % |
-| Time per frame | 0.14 s on a laptop GPU, 0.43 s on a laptop CPU |
+| Time per frame | 0.25 s on a laptop GPU, 0.82 s on a laptop CPU |
 
 ### Why this problem
 
-OoC platforms are moving from single experiments to studies with hundreds of chips, and regulators now accept non-animal methods in preclinical testing. Quality control has not kept up: whether a culture is fit to analyse is still a personal judgement that leaves no trace in the data. A wrong "yes" contaminates every downstream measurement and every dataset later used to train models or digital twins; a wrong "no" discards days of culture. A gate that states its own error rate, shows its evidence and writes an audit record makes that judgement reproducible and turns the quality state of each frame into metadata that travels with the image. At a 10 % target about 185 frames per 1,000 need no look; at an assumed 10 to 30 seconds per look that is 31 to 92 minutes of looking avoided per 1,000 frames, and 78 to 235 at a 20 % target (report, section 7.1). The audit record is also the quality layer that an organ-on-a-chip data asset, and a digital twin trained on it, needs first (section 7.2).
+OoC platforms are moving from single experiments to studies with hundreds of chips, and regulators now accept non-animal methods in preclinical testing. Quality control has not kept up: whether a culture is fit to analyse is still a personal judgement that leaves no trace in the data. A wrong "yes" contaminates every downstream measurement and every dataset later used to train models or digital twins; a wrong "no" discards days of culture. A gate that states its own error rate, shows its evidence and writes an audit record makes that judgement reproducible and turns the quality state of each frame into metadata that travels with the image. At a 10 % target about 260 frames per 1,000 need no look; at an assumed 10 to 30 seconds per look that is 43 to 130 minutes of looking avoided per 1,000 frames, and 84 to 253 at a 20 % target (report, section 7.1). The audit record is also the quality layer that an organ-on-a-chip data asset, and a digital twin trained on it, needs first (section 7.2).
 
 ### What is technically new
 
 - **The whole frame at resolution.** Keeping the entire field of view at 1344 px instead of a 224 px crop is worth 0.086 AUROC with the same backbone.
-- **Self-supervised features for robustness.** DINOv2 patch descriptors transfer to unseen cell lines without loss and to an unseen camera better than any supervised backbone we tested.
+- **Self-supervised features for robustness.** DINOv2 patch descriptors transfer to unseen cell lines with at most 0.04 AUROC lost and to an unseen camera better than any supervised backbone we tested.
+- **A deeper read-out of the same frozen backbone.** Describing each patch by the last four transformer blocks instead of the last one, on 4 × 4 tiles, adds 0.019 (0.007 to 0.031) AUROC over our previous version at no extra parameters, and the model still runs in a browser.
 - **Exact evidence maps.** The explanation is the model's own arithmetic, not a post-hoc approximation.
 - **Two stages for two kinds of "bad".** A frame that is not a usable observation goes back to the microscope; a culture that looks poor goes to a person. The experts' "bad" label mixes both, and they call for different actions.
-- **Validation that matches how the data were produced.** Dates are held out, tuning stays inside training dates, intervals resample dates. The same model scores 0.918 AUROC on a random split of the images and 0.852 on held-out dates.
+- **Validation that matches how the data were produced.** Dates are held out, tuning stays inside training dates, intervals resample dates. The same model scores 0.939 AUROC on a random split of the images and 0.872 on held-out dates.
 - **A decision rule that states its own error rate**, with a safety margin, and two documented negative results (no automatic rejection, no 5 % target).
 
 ### Limits

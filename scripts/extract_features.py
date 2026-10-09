@@ -18,33 +18,33 @@ from chipqc.frames import open_frame, to_model_input  # noqa: E402
 
 
 class Frames(torch.utils.data.Dataset):
-    def __init__(self, images: Path, paths: list[str]):
-        self.images, self.paths = images, paths
+    def __init__(self, images: Path, paths: list[str], size: tuple[int, int]):
+        self.images, self.paths, self.size = images, paths, size
 
     def __len__(self):
         return len(self.paths)
 
     def __getitem__(self, i):
-        return to_model_input(open_frame(self.images / self.paths[i]))
+        return to_model_input(open_frame(self.images / self.paths[i]), self.size)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--images", type=Path, default=ROOT / "data/raw/OOC_image_dataset")
     ap.add_argument("--manifest", type=Path, default=ROOT / "data/manifest.csv")
-    ap.add_argument("--backbone", default="dinov2_vits14")
-    ap.add_argument("--batch", type=int, default=4)
+    ap.add_argument("--backbone", default="dinov2_vits14_4x4_l4")
+    ap.add_argument("--batch", type=int, default=2)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--out", type=Path, default=None)
     a = ap.parse_args()
 
     man = load_manifest(a.manifest)
     enc = FrameEncoder(a.backbone)
-    loader = torch.utils.data.DataLoader(Frames(a.images, man.path.tolist()), batch_size=a.batch, num_workers=a.workers)
+    loader = torch.utils.data.DataLoader(Frames(a.images, man.path.tolist(), enc.frame_size), batch_size=a.batch, num_workers=a.workers)
     parts, t0 = [], time.time()
     for i, batch in enumerate(loader):
         parts.append(enc.embed(batch.numpy()))
-        if (i + 1) % 100 == 0:
+        if (i + 1) % 200 == 0:
             print(f"{(i + 1) * a.batch}/{len(man)} frames, {(i + 1) * a.batch / (time.time() - t0):.1f} per second", flush=True)
     out = a.out or ROOT / f"features/{a.backbone}.npz"
     out.parent.mkdir(parents=True, exist_ok=True)

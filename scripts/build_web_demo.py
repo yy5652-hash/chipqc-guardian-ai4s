@@ -37,7 +37,7 @@ for item in meta["frames"]:
                                                                           "acquisition": {k: round(v, 6) for k, v in a.acquisition.items()}}})
 ev = g.spec.get("evaluation") or {}
 web = {"name": g.spec["name"], "created_utc": g.spec["created_utc"], "held_out_dates": g.spec["held_out_dates"], "backbone": "DINOv2 ViT-S/14 with registers (frozen)",
-       "frame_size": [1344, 1008], "tile": [448, 336], "grid": [3, 3], "thresholds": g.spec["thresholds"], "default_error_target": str(g.spec["default_error_target"]),
+       "frame_size": g.spec["frame_size"], "tile": g.spec["tile"], "grid": g.spec["grid"], "thresholds": g.spec["thresholds"], "default_error_target": str(g.spec["default_error_target"]),
        "acquisition_limits": g.limits, "note": meta["note"], "frames": frames,
        "evaluation": {"auroc": ev.get("auroc"), "frames": ev.get("frames"), "dates": ev.get("dates"), "system": ev.get("system")}}
 (DOCS / "model/web_model.json").write_text(json.dumps(web, indent=1))

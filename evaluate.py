@@ -23,7 +23,7 @@ from chipqc.protocol import (C_GRID, ERROR_TARGETS, date_bootstrap, date_folds, 
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, precision_score, recall_score, roc_auc_score  # noqa: E402
 from sklearn.model_selection import StratifiedKFold  # noqa: E402
 
-MAIN = "dinov2_vits14"
+MAIN = "dinov2_vits14_4x4_l4"
 #: feature file -> how the frame was shown to the backbone
 REPRESENTATIONS = {
     "mobilenet_v2_224crop": "MobileNetV2, 224 px centre crop (first submission)",
@@ -33,9 +33,11 @@ REPRESENTATIONS = {
     "resnet50_1344": "ResNet-50, whole frame, 1344 px",
     "convnext_tiny_1344": "ConvNeXt-Tiny, whole frame, 1344 px",
     "dinov2_vits14_2x2": "DINOv2 ViT-S/14, whole frame at 896 px, 2 x 2 tiles",
-    "dinov2_vits14": "DINOv2 ViT-S/14, whole frame at 1344 px, 3 x 3 tiles (released model)",
-    "dinov2_vits14_4x4": "DINOv2 ViT-S/14, whole frame at 1792 px, 4 x 4 tiles",
+    "dinov2_vits14": "DINOv2 ViT-S/14, whole frame at 1344 px, 3 x 3 tiles (second submission)",
     "dinov2_vitb14": "DINOv2 ViT-B/14, whole frame at 1344 px, 3 x 3 tiles",
+    "dinov2_vits14_4x4": "DINOv2 ViT-S/14, whole frame at 1792 px, 4 x 4 tiles",
+    "dinov2_vits14_l4": "DINOv2 ViT-S/14, 1344 px, 3 x 3 tiles, last four blocks",
+    "dinov2_vits14_4x4_l4": "DINOv2 ViT-S/14, 1792 px, 4 x 4 tiles, last four blocks (released model)",
 }
 
 
@@ -127,7 +129,7 @@ def first_submission_split(man, out):
     y, dates = man.label_good.to_numpy(), man.date.to_numpy()
     tr, te = np.isin(dates, split["train"] + split["calibration"]), np.isin(dates, split["test"])
     rows = {"test_frames": int(te.sum()), "test_dates": int(len(split["test"])), "first_submission": {"auroc": 0.772, "balanced_accuracy": 0.712, "accuracy": 0.718}}
-    for name in (MAIN, "mobilenet_v2_224crop"):
+    for name in (MAIN, "dinov2_vits14", "mobilenet_v2_224crop"):
         X = features(name, man)
         if X is None:
             continue

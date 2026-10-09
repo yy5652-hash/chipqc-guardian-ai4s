@@ -14,24 +14,27 @@ Before an organ-on-a-chip culture is dosed, stained or measured, someone looks a
 
 **[Watch the 3½-minute film](https://youtu.be/TDwHyMEzVOM)**, also on [Bilibili](https://www.bilibili.com/video/BV1h1Hd6vESY) ([mp4](https://github.com/yy5652-hash/chipqc-guardian-ai4s/raw/media/ChipQC_Guardian_Demo_Video.mp4)) · **[Try it in your browser](https://yy5652-hash.github.io/chipqc-guardian-ai4s/)** (the model runs on your machine; nothing is uploaded) · [Technical report (PDF)](ChipQC_Guardian_Technical_Report.pdf) · [Kaggle writeup](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/writeups/chipqc-guardian-reliable-ooc-image-quality-review) · [model card](MODEL_CARD.md) · [data card](DATA_CARD.md)
 
+The film was recorded with the previous version of the model (3 × 3 tiles, AUROC 0.852); the system and the workflow it shows are unchanged, and the numbers below are those of the released model.
+
 ## Results
 
 Measured on the public [Organ-on-a-Chip Image Dataset](https://doi.org/10.5281/zenodo.10203721) (3,072 frames, six cell lines, 59 acquisition dates). **Whole acquisition dates are held out**: frames from one date are not independent, so a random split flatters any model. Regularisation, calibration and thresholds are chosen inside the training dates; intervals resample dates.
 
 | | |
 |---|---|
-| AUROC, dates held out | **0.852** (95 % interval 0.821–0.883) |
+| AUROC, dates held out | **0.872** (95 % interval 0.842–0.900) |
 | Same protocol, 224 px centre crop (our first submission) | 0.738 |
-| Frozen 12-date test split of our first submission (first submission: 0.772) | 0.859 |
-| Accuracy on the dataset authors' own split (published baseline 0.81) | 0.86 |
-| Cell line withheld from training: largest AUROC change over six lines | 0.02 |
-| Different camera, no local labels: AUROC | 0.71 and 0.74 (same camera: 0.79 and 0.84) |
-| At a 10 % target: passed automatically / bad among passed | 18 % / 8.6 % |
-| At a 20 % target: passed automatically / bad among passed | 47 % / 17.1 % |
+| Our second submission, same protocol (3 × 3 tiles, last block only) | 0.852; the released model gains 0.019 (0.007 to 0.031) |
+| Frozen 12-date test split of our first submission (first: 0.772, second: 0.859) | 0.884 |
+| Accuracy on the dataset authors' own split (published baseline 0.81) | 0.88 |
+| Cell line withheld from training: largest AUROC change over six lines | 0.04 |
+| Different camera, no local labels: AUROC | 0.72 and 0.75 (same camera: 0.82 and 0.87) |
+| At a 10 % target: passed automatically / bad among passed | 26 % / 9.6 % |
+| At a 20 % target: passed automatically / bad among passed | 51 % / 17.5 % |
 | Sent back for re-acquisition / of those, labelled bad by experts | 15 % / 66 % |
-| Seconds per frame, laptop GPU / CPU | 0.14 / 0.43 |
+| Seconds per frame, laptop GPU / CPU | 0.25 / 0.82 |
 
-Two things the data do **not** support, and the system therefore does not do: automatic rejection (at a 10 % target, 23 % of the frames it would discard were good) and a 5 % pass target. Both are reported in the [technical report](ChipQC_Guardian_Technical_Report.pdf), sections 5.4 and 6.
+Two things the data do **not** support, and the system therefore does not do: automatic rejection (at a 10 % target, 13 % of the frames it would discard were good) and a 5 % pass target. Both are reported in the [technical report](ChipQC_Guardian_Technical_Report.pdf), sections 5.4 and 6.
 
 ![AUROC on held-out dates for each representation.](reports/figures/fig_representations.png)
 
@@ -62,7 +65,7 @@ python scripts/build_report.py       # the report, README and model card, filled
 pytest -q                            # the unit tests
 ```
 
-The full evaluation takes about 2 minutes on an Apple-silicon laptop and much longer on a small cloud machine: on 4 x86 cores the headline analysis alone took about 5 minutes and the full run more than 40. `evaluate.py` needs no images: `features/` holds the embeddings of all 3,072 frames for every representation in the comparison, and the acquisition descriptors. To rebuild those from the raw data (6.7 GB download, about 15 minutes on a laptop GPU):
+The full evaluation takes about 3 minutes on an Apple-silicon desktop and much longer on a small cloud machine (tens of minutes on 4 x86 cores); `--only headline` is the quick check there. `evaluate.py` needs no images: `features/` holds the embeddings of all 3,072 frames for every representation in the comparison, and the acquisition descriptors. To rebuild those from the raw data (6.7 GB download, about 15 minutes on a laptop GPU):
 
 ```bash
 bash scripts/reproduce_from_images.sh
@@ -72,7 +75,7 @@ bash scripts/reproduce_from_images.sh
 
 | Path | Contents |
 |---|---|
-| `src/chipqc/` | the package: frame reading, backbone, acquisition descriptors, evaluation protocol, decision rule, the assembled `Guardian`, rendering (602 lines) |
+| `src/chipqc/` | the package: frame reading, backbone, acquisition descriptors, evaluation protocol, decision rule, the assembled `Guardian`, rendering (623 lines) |
 | `inference.py`, `app.py`, `evaluate.py` | entry points: score frames, review console, all experiments |
 | `models/guardian-v2/` | the released model: `model.json` (weights, calibrator, thresholds, limits, evaluation summary) and reference embeddings with thumbnails |
 | `models/guardian-v2-demo/` | the same recipe fitted without dates 230524 and 230425, used for the bundled examples |
@@ -83,7 +86,7 @@ bash scripts/reproduce_from_images.sh
 | `docs/` | the static browser demo (GitHub Pages): page, JavaScript port, ONNX model, bundled frames, and ONNX Runtime Web in `docs/vendor/`, so the page contacts no other server |
 | `scripts/` | data preparation, training, studies, figures, report |
 
-The clone command above uses `--depth 1`, which fetches only the current version (about 180 MB, mostly the browser demo's ONNX model and the embeddings). The demo film is on the [`media` branch](https://github.com/yy5652-hash/chipqc-guardian-ai4s/tree/media), outside that download.
+The clone command above uses `--depth 1`, which fetches only the current version (about 250 MB, mostly the browser demo's ONNX model and the embeddings). The demo film is on the [`media` branch](https://github.com/yy5652-hash/chipqc-guardian-ai4s/tree/media), outside that download.
 
 ## Scope and limits
 

@@ -37,4 +37,4 @@ Formats: 2,048 frames at 2056 × 1542 px, greyscale; 934 at 2048 × 1536 px, col
 
 ## What this repository redistributes
 
-Derived material only, with attribution: `data/manifest.csv` (one row per frame, from the authors' spreadsheet), embeddings of every frame (`features/`), 144 px grey thumbnails of the reference frames (`models/guardian-v2/atlas/`) and nine example frames resized to 1344 × 1008 px (`examples/`). The full-resolution images are not redistributed; download them from Zenodo.
+Derived material only, with attribution: `data/manifest.csv` (one row per frame, from the authors' spreadsheet), embeddings of every frame (`features/`), 144 px grey thumbnails of the reference frames (`models/guardian-v2/atlas/`) and nine example frames resized to 1792 × 1344 px (`examples/`). The full-resolution images are not redistributed; download them from Zenodo.

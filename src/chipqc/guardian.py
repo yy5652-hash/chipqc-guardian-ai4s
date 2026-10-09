@@ -94,7 +94,7 @@ class Guardian:
         image = open_frame(source)
         acq = acquisition_descriptors(to_grey(image))
         flags = acquisition_flags(acq, self.limits)
-        cells = self.encoder.cell_descriptors(to_model_input(image)[None])[0]
+        cells = self.encoder.cell_descriptors(to_model_input(image, self.encoder.frame_size)[None])[0]
         p, evidence = self.score_cells(cells)
         t_pass = self.pass_threshold(error_target)
         target = float(error_target if error_target is not None else self.default_target)

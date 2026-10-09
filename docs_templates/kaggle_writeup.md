@@ -14,21 +14,21 @@
 {{ "- Bilibili: " + links.video_bilibili if links.video_bilibili else "" }}
 - File: `ChipQC_Guardian_Demo_Video.mp4` (63 MB), attached to this writeup under Project Files
 
-A {{ links.video_length }} film made from the real system and the real data: every frame of the dataset sorted by the outcome it received on a day the model never saw, an evidence map building up patch by patch, the acquisition gate reacting to controlled faults, the review console, the browser demo and the command line, then the measured results and the limits. Narration is a synthetic voice and the soundtrack is generated.
+A {{ links.video_length }} film made from the real system and the real data: every frame of the dataset sorted by the outcome it received on a day the model never saw, an evidence map building up patch by patch, the acquisition gate reacting to controlled faults, the review console, the browser demo and the command line, then the measured results and the limits. Narration is a synthetic voice and the soundtrack is generated. The film was recorded with the previous version of the model (3 × 3 tiles, AUROC {{ f3(REP.dinov2_vits14.auroc.value) }}); the system, the workflow and the limits it shows are unchanged, and the numbers in this writeup and in the report are those of the released model.
 
 ## Code repository
 
 https://github.com/yy5652-hash/chipqc-guardian-ai4s
 
-Source, released model, embeddings of all 3,072 frames, result files, figures, tests and the scripts that regenerate every number. `python evaluate.py` reproduces the full evaluation without downloading any images: about two minutes on an Apple-silicon laptop, longer on a small cloud machine (`--only headline` reproduces the headline numbers in about five minutes on 4 x86 cores).
+Source, released model, embeddings of all 3,072 frames, result files, figures, tests and the scripts that regenerate every number. `python evaluate.py` reproduces the full evaluation without downloading any images: about three minutes on an Apple-silicon desktop, longer on a small cloud machine (`--only headline` is the quick check there).
 
 ## Project summary
 
 Before an organ-on-a-chip (OoC) culture is dosed, stained or measured, someone looks at brightfield frames and decides whether the culture is usable. That decision is made by eye, differs between people and is rarely recorded. **ChipQC Guardian** turns it into a logged, checkable step: every frame gets **PASS** (use it without a person looking), **REACQUIRE** (not a usable observation: image it again) or **REVIEW** (a person decides, most suspicious first), with the evidence behind the outcome.
 
-An acquisition gate measures five physical properties of the image. A culture-quality model reads the whole 2056 × 1542 px frame with a frozen self-supervised vision transformer (DINOv2 ViT-S/14) and a linear classifier, so each of the 6,912 image patches has an exact share of the score, drawn as an evidence map. A frame passes automatically only above a threshold fitted on other acquisition dates to keep the share of bad frames among passed frames under a chosen target.
+An acquisition gate measures five physical properties of the image. A culture-quality model reads the whole 2056 × 1542 px frame with a frozen self-supervised vision transformer (DINOv2 ViT-S/14), read as 4 × 4 tiles at 1792 px, and a linear classifier on the last four blocks, so each of the {{ cells }} image patches has an exact share of the score, drawn as an evidence map. A frame passes automatically only above a threshold fitted on other acquisition dates to keep the share of bad frames among passed frames under a chosen target.
 
-On the public Organ-on-a-Chip Image Dataset (3,072 frames, six cell lines, 59 acquisition dates) we hold out **whole acquisition dates**, because frames from one day are not independent. The model reaches an AUROC of **{{ f3(H.auroc.value) }}** (95 % interval {{ ci(H.auroc) }}); on the frozen test dates of our first version it scores {{ f3(FS.dinov2_vits14.auroc) }} against that version's {{ f3(FS.first_submission.auroc) }}. At a 10 % target, {{ pct(S10.passed_automatically) }} of frames pass with {{ pct1(S10.bad_among_passed) }} bad among them and {{ pct(S10.sent_to_reacquire) }} are sent back for re-imaging. No cell line loses accuracy when withheld from training; a different camera does, until local labels are added; automatic rejection is not supported by the data. We report all three. The value is a quality decision with a stated error rate, visible evidence and an audit record that travels with the image.
+On the public Organ-on-a-Chip Image Dataset (3,072 frames, six cell lines, 59 acquisition dates) we hold out **whole acquisition dates**, because frames from one day are not independent. The model reaches an AUROC of **{{ f3(H.auroc.value) }}** (95 % interval {{ ci(H.auroc) }}); our previous version scored {{ f3(REP.dinov2_vits14.auroc.value) }} under the same protocol, and on the frozen test dates of our first version the model scores {{ f3(FS.dinov2_vits14_4x4_l4.auroc) }} against that version's {{ f3(FS.first_submission.auroc) }}. At a 10 % target, {{ pct(S10.passed_automatically) }} of frames pass with {{ pct1(S10.bad_among_passed) }} bad among them and {{ pct(S10.sent_to_reacquire) }} are sent back for re-imaging. A cell line withheld from training loses at most {{ f2(max_line_drop) }} AUROC; a different camera loses about ten points, until local labels are added; automatic rejection is not supported by the data. We report all three. The value is a quality decision with a stated error rate, visible evidence and an audit record that travels with the image.
 
 ## Technical report
 
@@ -41,6 +41,7 @@ All numbers are for acquisition dates the model never saw; intervals resample da
 | | |
 |---|---|
 | AUROC | **{{ f3(H.auroc.value) }}** ({{ ci(H.auroc) }}) |
+| Same protocol, our previous version (3 × 3 tiles, last block only) | {{ f3(REP.dinov2_vits14.auroc.value) }} |
 | Same protocol, 224 px centre crop (the representation of our first version) | {{ f3(REP.mobilenet_v2_224crop.auroc.value) }} |
 | Accuracy on the dataset authors' own split (published baseline: 0.81) | {{ f2(LK.authors_split.accuracy) }} |
 | Largest AUROC change when a cell line is withheld from training (six lines) | {{ f2(max_line_drop) }} |
@@ -57,7 +58,8 @@ OoC platforms are moving from single experiments to studies with hundreds of chi
 ### What is technically new
 
 - **The whole frame at resolution.** Keeping the entire field of view at 1344 px instead of a 224 px crop is worth {{ f3(REP.mobilenet_v2_1344.auroc.value - REP.mobilenet_v2_224crop.auroc.value) }} AUROC with the same backbone.
-- **Self-supervised features for robustness.** DINOv2 patch descriptors transfer to unseen cell lines without loss and to an unseen camera better than any supervised backbone we tested.
+- **Self-supervised features for robustness.** DINOv2 patch descriptors transfer to unseen cell lines with at most {{ f2(max_line_drop) }} AUROC lost and to an unseen camera better than any supervised backbone we tested.
+- **A deeper read-out of the same frozen backbone.** Describing each patch by the last four transformer blocks instead of the last one, on 4 × 4 tiles, adds {{ gain(REP.dinov2_vits14.auroc_minus_released) }} AUROC over our previous version at no extra parameters, and the model still runs in a browser.
 - **Exact evidence maps.** The explanation is the model's own arithmetic, not a post-hoc approximation.
 - **Two stages for two kinds of "bad".** A frame that is not a usable observation goes back to the microscope; a culture that looks poor goes to a person. The experts' "bad" label mixes both, and they call for different actions.
 - **Validation that matches how the data were produced.** Dates are held out, tuning stays inside training dates, intervals resample dates. The same model scores {{ f3(LK.random_image_folds.auroc) }} AUROC on a random split of the images and {{ f3(H.auroc.value) }} on held-out dates.

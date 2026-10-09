@@ -4,9 +4,10 @@ A backbone turns a frame into a grid of cell descriptors. The frame embedding is
 classifier is linear in that mean, every grid cell has an exact additive share of the frame's score: the
 evidence map is the model's own arithmetic, not a post-hoc approximation.
 
-The released model uses DINOv2 ViT-S/14 (self-supervised, Apache-2.0). The 1344 x 1008 frame is cut into 3 x 3
-non-overlapping tiles of 448 x 336 px; each tile is one forward pass; every 14 px patch token is one grid cell
-(96 x 72 cells per frame). Supervised ImageNet CNNs are kept for the ablations (one cell per 32 px).
+The released model uses DINOv2 ViT-S/14 (self-supervised, Apache-2.0). The 1792 x 1344 frame is cut into 4 x 4
+non-overlapping tiles of 448 x 336 px; each tile is one forward pass; every 14 px patch is one grid cell
+(128 x 96 cells per frame), described by its tokens after the last four transformer blocks (4 x 384 values).
+The 3 x 3 tilings and the supervised ImageNet CNNs (one cell per 32 px) are kept for the ablations.
 """
 from __future__ import annotations
 
@@ -14,6 +15,8 @@ import numpy as np
 
 BACKBONES = {
     "dinov2_vits14": {"kind": "vit", "timm": "vit_small_patch14_reg4_dinov2.lvd142m", "dim": 384, "tile": (448, 336), "grid": (3, 3)},
+    "dinov2_vits14_l4": {"kind": "vit", "timm": "vit_small_patch14_reg4_dinov2.lvd142m", "dim": 1536, "tile": (448, 336), "grid": (3, 3), "blocks": 4},
+    "dinov2_vits14_4x4_l4": {"kind": "vit", "timm": "vit_small_patch14_reg4_dinov2.lvd142m", "dim": 1536, "tile": (448, 336), "grid": (4, 4), "blocks": 4},
     "dinov2_vitb14": {"kind": "vit", "timm": "vit_base_patch14_reg4_dinov2.lvd142m", "dim": 768, "tile": (448, 336), "grid": (3, 3)},
     "convnext_tiny": {"kind": "cnn", "torchvision": ("convnext_tiny", "ConvNeXt_Tiny_Weights", "IMAGENET1K_V1"), "dim": 768},
     "mobilenet_v2": {"kind": "cnn", "torchvision": ("mobilenet_v2", "MobileNet_V2_Weights", "IMAGENET1K_V2"), "dim": 1280},
@@ -39,8 +42,18 @@ def load_backbone(name: str):
     return net.features.eval()
 
 
+def patch_tokens(net, tiles, blocks: int = 1):
+    """Patch tokens of a ViT: tiles x patches x C. With blocks > 1, the tokens after each of the last `blocks`
+    transformer blocks (final norm applied) are concatenated along C, earliest block first."""
+    if blocks == 1:
+        return net.forward_features(tiles)[:, net.num_prefix_tokens:]
+    import torch
+
+    return torch.cat(net.get_intermediate_layers(tiles, n=blocks, norm=True), dim=-1)
+
+
 class FrameEncoder:
-    def __init__(self, name: str = "dinov2_vits14", device: str | None = None, grid: tuple[int, int] | None = None):
+    def __init__(self, name: str = "dinov2_vits14_4x4_l4", device: str | None = None, grid: tuple[int, int] | None = None):
         """`grid` (tiles across, tiles down) overrides the 3 x 3 tiling of a ViT backbone; used only by the ablations."""
         import torch
 
@@ -49,6 +62,14 @@ class FrameEncoder:
             self.spec["grid"] = tuple(grid)
         self.device = torch.device(device or ("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"))
         self.net = load_backbone(name).to(self.device)
+
+    @property
+    def frame_size(self) -> tuple[int, int]:
+        """Width and height of the frame this encoder reads (frames.to_model_input)."""
+        if self.spec["kind"] == "cnn":
+            return (1344, 1008)
+        (tw, th), (nx, ny) = self.spec["tile"], self.spec["grid"]
+        return (nx * tw, ny * th)
 
     def cell_descriptors(self, batch: np.ndarray) -> np.ndarray:
         """batch: B x 3 x H x W (frames.to_model_input) -> B x h x w x C float32, one descriptor per grid cell."""
@@ -63,7 +84,7 @@ class FrameEncoder:
                 raise ValueError(f"{self.name} expects {nx * tw} x {ny * th} px frames, got {x.shape[3]} x {x.shape[2]}")
             b = x.shape[0]
             tiles = x.unfold(2, th, th).unfold(3, tw, tw).permute(0, 2, 3, 1, 4, 5).reshape(b * ny * nx, 3, th, tw)
-            tokens = self.net.forward_features(tiles)[:, self.net.num_prefix_tokens:]            # tiles x (gh * gw) x C
+            tokens = patch_tokens(self.net, tiles, self.spec.get("blocks", 1))                   # tiles x (gh * gw) x C
             gh, gw = th // 14, tw // 14
             grid = tokens.reshape(b, ny, nx, gh, gw, -1).permute(0, 1, 3, 2, 4, 5).reshape(b, ny * gh, nx * gw, -1)
             return grid.float().cpu().numpy()

@@ -70,8 +70,8 @@
     <p id="reasons"></p>
     <p id="truth"></p>
     <div class="pair">
-      <figure><canvas id="frame" width="960" height="720"></canvas><figcaption>Frame, as the model sees it (1344 × 1008 px).</figcaption></figure>
-      <figure><canvas id="evidence" width="960" height="720"></canvas><figcaption>Evidence map: blue regions pull the score towards good, red towards bad. Each of the 6,912 patches has an exact share of the score; the map averages to it.</figcaption></figure>
+      <figure><canvas id="frame" width="960" height="720"></canvas><figcaption>Frame, as the model sees it (1792 × 1344 px).</figcaption></figure>
+      <figure><canvas id="evidence" width="960" height="720"></canvas><figcaption>Evidence map: blue regions pull the score towards good, red towards bad. Each of the 12,288 patches has an exact share of the score; the map averages to it.</figcaption></figure>
     </div>
     <table>
       <thead><tr><th>Acquisition descriptor</th><th>Value</th><th>Limit</th></tr></thead>
@@ -84,7 +84,7 @@
   <h2>What you are looking at</h2>
   <ul>
     <li><b>Acquisition gate.</b> Five physical measurements decide whether the frame is a usable observation at all.</li>
-    <li><b>Culture-quality score.</b> The whole frame is read as 3 × 3 tiles by a frozen self-supervised vision transformer (DINOv2 ViT-S/14); a linear classifier on the average patch descriptor gives a calibrated probability that experts would call the culture good.</li>
+    <li><b>Culture-quality score.</b> The whole frame is read as 4 × 4 tiles by a frozen self-supervised vision transformer (DINOv2 ViT-S/14); a linear classifier on the average patch descriptor, taken after its last four blocks, gives a calibrated probability that experts would call the culture good.</li>
     <li><b>Decision.</b> A frame passes only above a threshold fitted, on other acquisition dates, to keep the share of bad frames among passed frames under the target, with a safety margin. Everything else goes to a person.</li>
   </ul>
   <p id="headline" class="lede"></p>
@@ -97,7 +97,7 @@
   </ul>
 
   <footer>
-    Reference data and bundled frames: Movčana V. et al., <i>Organ-on-a-Chip (OOC) Image Dataset</i>, Zenodo, <a href="https://doi.org/10.5281/zenodo.10203721">doi:10.5281/zenodo.10203721</a>, CC BY 4.0, resized to 1344 × 1008 px. Backbone: DINOv2 (Meta AI), Apache-2.0. Entry for AI4S Open Innovation: AI for Life Science.
+    Reference data and bundled frames: Movčana V. et al., <i>Organ-on-a-Chip (OOC) Image Dataset</i>, Zenodo, <a href="https://doi.org/10.5281/zenodo.10203721">doi:10.5281/zenodo.10203721</a>, CC BY 4.0, resized to 1792 × 1344 px. Backbone: DINOv2 (Meta AI), Apache-2.0. Entry for AI4S Open Innovation: AI for Life Science.
   </footer>
 </main>
 <script type="module" src="app.js"></script>

@@ -1,7 +1,7 @@
 """Reading a brightfield frame the way the model saw every training frame.
 
-The whole field of view is kept and resized to 1344 x 1008 px (a 0.65x downscale of the 2056 x 1542 source
-frames), which the released backbone reads as 3 x 3 tiles of 448 x 336 px.
+The whole field of view is kept and resized to 1792 x 1344 px (a 0.87x downscale of the 2056 x 1542 source
+frames), which the released backbone reads as 4 x 4 tiles of 448 x 336 px.
 """
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from typing import BinaryIO, Union
 import numpy as np
 from PIL import Image
 
-MODEL_SIZE = (1344, 1008)          # width, height shown to the model: a 0.65x downscale of the 2056 x 1542 source frames
+MODEL_SIZE = (1792, 1344)          # width, height shown to the released model: a 0.87x downscale of the 2056 x 1542 source frames
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 Source = Union[str, Path, BinaryIO, Image.Image]

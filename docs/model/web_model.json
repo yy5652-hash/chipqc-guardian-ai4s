@@ -1,32 +1,32 @@
 {
  "name": "guardian-v2-demo",
- "created_utc": "2026-10-05T20:52:48Z",
+ "created_utc": "2026-10-09T18:22:42Z",
  "held_out_dates": [
   "230524",
   "230425"
  ],
  "backbone": "DINOv2 ViT-S/14 with registers (frozen)",
  "frame_size": [
-  1344,
-  1008
+  1792,
+  1344
  ],
  "tile": [
   448,
   336
  ],
  "grid": [
-  3,
-  3
+  4,
+  4
  ],
  "thresholds": {
   "0.1": {
-   "t_pass": 0.8538
+   "t_pass": 0.835
   },
   "0.15": {
-   "t_pass": 0.674
+   "t_pass": 0.7003
   },
   "0.2": {
-   "t_pass": 0.5252
+   "t_pass": 0.4865
   }
  },
  "default_error_target": "0.1",
@@ -36,7 +36,7 @@
   "log_sharpness_min": -3.3871,
   "median_brightness_min": 0.2627
  },
- "note": "9 real frames from acquisition dates 230524 and 230425 of the Organ-on-a-Chip Image Dataset (Mov\u010dana et al., Zenodo, doi:10.5281/zenodo.10203721, CC BY 4.0), resized to 1344 \u00d7 1008 px. They are scored by a model fitted without those two dates.",
+ "note": "9 real frames from acquisition dates 230524 and 230425 of the Organ-on-a-Chip Image Dataset (Mov\u010dana et al., Zenodo, doi:10.5281/zenodo.10203721, CC BY 4.0), resized to 1792 \u00d7 1344 px. They are scored by a model fitted without those two dates.",
  "frames": [
   {
    "file": "230425_21.png",
@@ -46,17 +46,17 @@
    "culture_day_bin": "4+",
    "thumb": "230425_21_thumb.jpg",
    "reference": {
-    "p_good": 0.976791,
+    "p_good": 0.961797,
     "decision": "PASS",
     "reasons": [
-     "P(good) 0.98 is at or above the pass threshold 0.85 (target: at most 10% of passed frames bad)"
+     "P(good) 0.96 is at or above the pass threshold 0.83 (target: at most 10% of passed frames bad)"
     ],
     "acquisition": {
      "occluded_block_frac": 0.080729,
-     "saturated_frac": 0.003793,
+     "saturated_frac": 0.003853,
      "median_brightness": 0.392157,
-     "log_sharpness": -2.291327,
-     "streak_anisotropy": 0.0439
+     "log_sharpness": -2.275855,
+     "streak_anisotropy": 0.043997
     }
    }
   },
@@ -68,39 +68,39 @@
    "culture_day_bin": "4+",
    "thumb": "230425_93_thumb.jpg",
    "reference": {
-    "p_good": 0.905434,
+    "p_good": 0.928146,
     "decision": "PASS",
     "reasons": [
-     "P(good) 0.91 is at or above the pass threshold 0.85 (target: at most 10% of passed frames bad)"
+     "P(good) 0.93 is at or above the pass threshold 0.83 (target: at most 10% of passed frames bad)"
     ],
     "acquisition": {
      "occluded_block_frac": 0.076823,
-     "saturated_frac": 0.034643,
+     "saturated_frac": 0.03509,
      "median_brightness": 0.498039,
-     "log_sharpness": -2.053737,
-     "streak_anisotropy": 0.01778
+     "log_sharpness": -2.030706,
+     "streak_anisotropy": 0.017675
     }
    }
   },
   {
-   "file": "230425_70.png",
-   "image_id": "230425_70",
-   "cell_line": "A549",
+   "file": "230425_50.png",
+   "image_id": "230425_50",
+   "cell_line": "HPMEC",
    "expert_label": "good",
    "culture_day_bin": "4+",
-   "thumb": "230425_70_thumb.jpg",
+   "thumb": "230425_50_thumb.jpg",
    "reference": {
-    "p_good": 0.678986,
+    "p_good": 0.536019,
     "decision": "REVIEW",
     "reasons": [
-     "P(good) 0.68 is below the pass threshold 0.85 (uncertain)"
+     "P(good) 0.54 is below the pass threshold 0.83 (uncertain)"
     ],
     "acquisition": {
-     "occluded_block_frac": 0.083333,
-     "saturated_frac": 0.039912,
-     "median_brightness": 0.439216,
-     "log_sharpness": -2.623058,
-     "streak_anisotropy": 0.098399
+     "occluded_block_frac": 0.160156,
+     "saturated_frac": 0.099739,
+     "median_brightness": 0.431373,
+     "log_sharpness": -1.929915,
+     "streak_anisotropy": 0.062913
     }
    }
   },
@@ -112,17 +112,17 @@
    "culture_day_bin": "4+",
    "thumb": "230425_180_thumb.jpg",
    "reference": {
-    "p_good": 0.030455,
+    "p_good": 0.017483,
     "decision": "REVIEW",
     "reasons": [
-     "P(good) 0.03 is below the pass threshold 0.85 (likely bad: review first)"
+     "P(good) 0.02 is below the pass threshold 0.83 (likely bad: review first)"
     ],
     "acquisition": {
      "occluded_block_frac": 0.050781,
-     "saturated_frac": 0.043411,
+     "saturated_frac": 0.044305,
      "median_brightness": 0.47451,
-     "log_sharpness": -1.977163,
-     "streak_anisotropy": 0.31524
+     "log_sharpness": -1.954854,
+     "streak_anisotropy": 0.315012
     }
    }
   },
@@ -134,39 +134,39 @@
    "culture_day_bin": "2-3",
    "thumb": "230524_81_thumb.jpg",
    "reference": {
-    "p_good": 0.059084,
+    "p_good": 0.031772,
     "decision": "REVIEW",
     "reasons": [
-     "P(good) 0.06 is below the pass threshold 0.85 (likely bad: review first)"
+     "P(good) 0.03 is below the pass threshold 0.83 (likely bad: review first)"
     ],
     "acquisition": {
      "occluded_block_frac": 0.19401,
-     "saturated_frac": 0.010766,
+     "saturated_frac": 0.01125,
      "median_brightness": 0.588235,
-     "log_sharpness": -1.544611,
-     "streak_anisotropy": 0.018706
+     "log_sharpness": -1.520723,
+     "streak_anisotropy": 0.019481
     }
    }
   },
   {
-   "file": "230524_32.png",
-   "image_id": "230524_32",
+   "file": "230425_141.png",
+   "image_id": "230425_141",
    "cell_line": "HPMEC",
    "expert_label": "good",
-   "culture_day_bin": "2-3",
-   "thumb": "230524_32_thumb.jpg",
+   "culture_day_bin": "4+",
+   "thumb": "230425_141_thumb.jpg",
    "reference": {
-    "p_good": 0.194925,
+    "p_good": 0.073605,
     "decision": "REVIEW",
     "reasons": [
-     "P(good) 0.19 is below the pass threshold 0.85 (likely bad: review first)"
+     "P(good) 0.07 is below the pass threshold 0.83 (likely bad: review first)"
     ],
     "acquisition": {
-     "occluded_block_frac": 0.018229,
-     "saturated_frac": 0.170203,
-     "median_brightness": 0.717647,
-     "log_sharpness": -1.370685,
-     "streak_anisotropy": 0.062189
+     "occluded_block_frac": 0.042969,
+     "saturated_frac": 0.028358,
+     "median_brightness": 0.431373,
+     "log_sharpness": -1.432917,
+     "streak_anisotropy": 0.268674
     }
    }
   },
@@ -178,17 +178,17 @@
    "culture_day_bin": "2-3",
    "thumb": "230524_30_thumb.jpg",
    "reference": {
-    "p_good": 0.029532,
+    "p_good": 0.069252,
     "decision": "REACQUIRE",
     "reasons": [
      "motion streak suspected (one-directional smear beyond the reference limit)"
     ],
     "acquisition": {
      "occluded_block_frac": 0.013021,
-     "saturated_frac": 0.176811,
+     "saturated_frac": 0.177663,
      "median_brightness": 0.780392,
-     "log_sharpness": -2.60058,
-     "streak_anisotropy": 0.941296
+     "log_sharpness": -2.584443,
+     "streak_anisotropy": 0.94218
     }
    }
   },
@@ -200,17 +200,17 @@
    "culture_day_bin": "2-3",
    "thumb": "230524_35_thumb.jpg",
    "reference": {
-    "p_good": 0.057928,
+    "p_good": 0.15583,
     "decision": "REACQUIRE",
     "reasons": [
      "34% of the field is blacked out"
     ],
     "acquisition": {
      "occluded_block_frac": 0.341146,
-     "saturated_frac": 0.083415,
-     "median_brightness": 0.45098,
-     "log_sharpness": -1.488035,
-     "streak_anisotropy": 0.094353
+     "saturated_frac": 0.085871,
+     "median_brightness": 0.447059,
+     "log_sharpness": -1.459965,
+     "streak_anisotropy": 0.094072
     }
    }
   },
@@ -222,7 +222,7 @@
    "culture_day_bin": "4+",
    "thumb": "230425_81_thumb.jpg",
    "reference": {
-    "p_good": 0.673671,
+    "p_good": 0.716958,
     "decision": "REACQUIRE",
     "reasons": [
      "defocus suspected (local sharpness below the reference limit)",
@@ -230,20 +230,20 @@
     ],
     "acquisition": {
      "occluded_block_frac": 0.122396,
-     "saturated_frac": 0.024275,
+     "saturated_frac": 0.024446,
      "median_brightness": 0.184314,
-     "log_sharpness": -3.451002,
-     "streak_anisotropy": 0.030332
+     "log_sharpness": -3.45038,
+     "streak_anisotropy": 0.032515
     }
    }
   }
  ],
  "evaluation": {
   "auroc": {
-   "value": 0.8524350841543559,
+   "value": 0.871676823164996,
    "ci95": [
-    0.8211181134143621,
-    0.8832870874177848
+    0.8420475174352929,
+    0.899738587035722
    ]
   },
   "frames": 3072,
@@ -251,65 +251,65 @@
   "system": {
    "0.05": {
     "summary": {
-     "passed_automatically": 0.04210069444444445,
-     "bad_among_passed": 0.06185567010309278,
+     "passed_automatically": 0.08138020833333333,
+     "bad_among_passed": 0.052,
      "sent_to_reacquire": 0.15071614583333334,
      "bad_among_reacquire": 0.6609071274298056,
-     "left_for_a_person": 0.8071831597222222,
-     "bad_among_review": 0.4157816910875118,
-     "review_queue_auroc": 0.8289306718209476,
-     "bad_found_in_first_third_of_queue": 0.6133301910320889,
+     "left_for_a_person": 0.7679036458333334,
+     "bad_among_review": 0.4349300551080966,
+     "review_queue_auroc": 0.843383128602055,
+     "bad_found_in_first_third_of_queue": 0.6204481670706288,
      "automatic_fail_if_it_existed": {
-      "frames": 0.011284722222222222,
-      "good_among_failed": 0.10576923076923077
+      "frames": 0.019748263888888888,
+      "good_among_failed": 0.03296703296703297
      }
     }
    },
    "0.1": {
     "summary": {
-     "passed_automatically": 0.18467881944444445,
-     "bad_among_passed": 0.08578143360752055,
+     "passed_automatically": 0.2600911458333333,
+     "bad_among_passed": 0.09595327492699209,
      "sent_to_reacquire": 0.15071614583333334,
      "bad_among_reacquire": 0.6609071274298056,
-     "left_for_a_person": 0.6646050347222222,
-     "bad_among_review": 0.48506122448979594,
-     "review_queue_auroc": 0.8014834143579582,
-     "bad_found_in_first_third_of_queue": 0.5539905757315077,
+     "left_for_a_person": 0.5891927083333334,
+     "bad_among_review": 0.5316758747697975,
+     "review_queue_auroc": 0.8147642589349262,
+     "bad_found_in_first_third_of_queue": 0.5410079992975646,
      "automatic_fail_if_it_existed": {
-      "frames": 0.04503038194444445,
-      "good_among_failed": 0.2265060240963855
+      "frames": 0.0876736111111111,
+      "good_among_failed": 0.1349009900990099
      }
     }
    },
    "0.15": {
     "summary": {
-     "passed_automatically": 0.3428819444444444,
-     "bad_among_passed": 0.13607594936708864,
+     "passed_automatically": 0.39453125,
+     "bad_among_passed": 0.13448844884488448,
      "sent_to_reacquire": 0.15071614583333334,
      "bad_among_reacquire": 0.6609071274298056,
-     "left_for_a_person": 0.5064019097222222,
-     "bad_among_review": 0.5757445896721662,
-     "review_queue_auroc": 0.7764393339835438,
-     "bad_found_in_first_third_of_queue": 0.48711556174026666,
+     "left_for_a_person": 0.4547526041666667,
+     "bad_among_review": 0.6270579813886901,
+     "review_queue_auroc": 0.7880346737007163,
+     "bad_found_in_first_third_of_queue": 0.4687760699388606,
      "automatic_fail_if_it_existed": {
-      "frames": 0.08344184027777778,
-      "good_among_failed": 0.2561768530559168
+      "frames": 0.13129340277777776,
+      "good_among_failed": 0.16859504132231407
      }
     }
    },
    "0.2": {
     "summary": {
-     "passed_automatically": 0.4700520833333333,
-     "bad_among_passed": 0.17082179132040629,
+     "passed_automatically": 0.5057508680555556,
+     "bad_among_passed": 0.17464063505685473,
      "sent_to_reacquire": 0.15071614583333334,
      "bad_among_reacquire": 0.6609071274298056,
-     "left_for_a_person": 0.3792317708333333,
-     "bad_among_review": 0.6801144492131617,
-     "review_queue_auroc": 0.7201833217238108,
-     "bad_found_in_first_third_of_queue": 0.4173090397720471,
+     "left_for_a_person": 0.3435329861111111,
+     "bad_among_review": 0.7274162981680354,
+     "review_queue_auroc": 0.7519044959135398,
+     "bad_found_in_first_third_of_queue": 0.4164197177440956,
      "automatic_fail_if_it_existed": {
-      "frames": 0.14453125,
-      "good_among_failed": 0.25900900900900903
+      "frames": 0.19954427083333334,
+      "good_among_failed": 0.19303969548667754
      }
     }
    }

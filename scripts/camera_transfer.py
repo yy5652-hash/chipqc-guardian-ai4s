@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from chipqc.data import load_manifest  # noqa: E402
 from chipqc.protocol import fit_head, head_logits  # noqa: E402
 
-MAIN = sys.argv[1] if len(sys.argv) > 1 else "dinov2_vits14"
+MAIN = sys.argv[1] if len(sys.argv) > 1 else "dinov2_vits14_4x4_l4"
 man = load_manifest(ROOT / "data/manifest.csv")
 cam = pd.read_csv(ROOT / "features/camera_format.csv").camera.str.startswith("grey").to_numpy()
 X = np.load(ROOT / f"features/{MAIN}.npz")["embeddings"].astype(np.float64)
