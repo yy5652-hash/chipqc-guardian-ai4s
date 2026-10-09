@@ -36,7 +36,7 @@ The user is a researcher or core-facility operator who images OoC chips in runs 
 
 ### 1.3 Related work
 
-Machine-learning quality control of microscopy has mostly targeted focus and imaging artefacts in high-content screening. For organ-on-a-chip cultures the only public benchmark we know of is the dataset used here. Its authors trained a convolutional network on a random split of the images (accuracy 0.81) [6]; George and Kenry classified a 631-image subset from Inception-v3 embeddings, again with a random split [12]. Neither separates acquisition dates, reports calibrated probabilities or a decision rule, or tests unseen cell lines or instruments. Our contribution is not a new network. It is a system built around a frozen foundation model, and a validation that says what such a model can be trusted to decide on data it has not seen, and what it cannot.
+Machine-learning quality control of microscopy has mostly targeted focus and imaging artefacts in high-content screening. For organ-on-a-chip cultures the only public benchmark we know of is the dataset used here. Its authors trained a convolutional network on a random split of the images (accuracy 0.81) [6]; George and Kenry classified a 631-image subset from Inception-v3 embeddings, again with a random split [12]. Neither separates acquisition dates, reports calibrated probabilities or a decision rule, or tests unseen cell lines or instruments. What is new here is a quality gate whose every decision can be checked, built on four ideas that, to our knowledge, have not been brought to organ-on-a-chip imaging before: an evidence map that is exact by construction, because the classifier is linear in the mean of the patch descriptors; a pass rule that carries a statistical safety margin and states the share of bad frames it lets through; a two-stage design that separates a frame that is not a usable observation from a culture that is poor, because the two call for different actions; and a validation that holds out whole acquisition dates, the unit at which these data are actually independent. Keeping the foundation model frozen is a deliberate choice, not a shortcut: it is what makes every explanation exact, and it lets a laboratory refit the system to its own instrument in seconds (section 7.3).
 
 ### 1.4 Contributions
 
@@ -245,13 +245,45 @@ The two highest-scored frames that experts labelled bad show an even, confluent-
 
 ## 7. Potential impact and path to use
 
-**Immediate use.** A laboratory imaging OoC chips can run the tool on each acquisition folder. At a 10 % target and on dates the model had not seen, per 1,000 frames about {{ int(1000 * S10.passed_automatically) }} need no inspection, about {{ int(1000 * S10.sent_to_reacquire) }} are returned to the microscope with a stated reason while re-imaging is still possible, and about {{ int(1000 * S10.left_for_a_person) }} are reviewed in order of suspicion. The laboratory chooses the target; at 20 % about {{ int(1000 * S20.passed_automatically) }} frames per 1,000 pass.
+### 7.1 What changes for the laboratory
 
-**Standardised quality metadata.** The audit record makes the quality state of every frame explicit, versioned and attached to the image hash. This is the kind of metadata that image collections need before they can be pooled across experiments, shared, or used to train downstream models such as response predictors or digital twins.
+A laboratory imaging OoC chips can run the tool on each acquisition folder as it is written. At a 10 % target and on dates the model had not seen, per 1,000 frames about {{ int(1000 * S10.passed_automatically) }} need no inspection, about {{ int(1000 * S10.sent_to_reacquire) }} are returned to the microscope with a stated reason while re-imaging is still possible, and about {{ int(1000 * S10.left_for_a_person) }} are reviewed in order of suspicion. The laboratory chooses the target; at 20 % about {{ int(1000 * S20.passed_automatically) }} frames per 1,000 pass.
 
-**Adoption on a new platform, including other tissues.** The backbone is frozen and the classifier has 384 weights, so adapting to a new microscope or tissue means labelling reference frames and refitting in seconds, not training a network. Section 5.6 gives a first estimate of the labelling cost (several sessions, a few hundred frames). The recommended procedure is: run in review-only mode, collect expert decisions through the console, refit, and switch on automatic passing only when held-out sessions meet the target.
+**Time.** The dataset does not record how long an expert spends on a frame, so the saving below is an estimate under a stated assumption, not a measurement. We assume 10 or 30 seconds per frame to open the image, judge the culture and record the call; a laboratory should substitute its own figure, and the saving scales linearly with it.
 
-**What would make it stronger.** Per-expert labels to measure the agreement ceiling; chip and channel identifiers to move from frames to chips; data from a second laboratory; and a prospective study measuring review time and downstream assay quality with and without the gate.
+| Target (bad among passed) | Frames per 1,000 that need no look | Bad among them (measured) | Looking avoided per 1,000 frames, at 10 s per frame | The same, at 30 s per frame |
+|---|---|---|---|---|
+| 10 % | {{ int(1000 * S10.passed_automatically) }} | {{ pct1(S10.bad_among_passed) }} | {{ minutes(1000 * S10.passed_automatically, 10) }} min | {{ minutes(1000 * S10.passed_automatically, 30) }} min |
+| 15 % | {{ int(1000 * S15.passed_automatically) }} | {{ pct1(S15.bad_among_passed) }} | {{ minutes(1000 * S15.passed_automatically, 10) }} min | {{ minutes(1000 * S15.passed_automatically, 30) }} min |
+| 20 % | {{ int(1000 * S20.passed_automatically) }} | {{ pct1(S20.bad_among_passed) }} | {{ minutes(1000 * S20.passed_automatically, 10) }} min | {{ minutes(1000 * S20.passed_automatically, 30) }} min |
+
+**Errors.** We cannot claim that the gate makes fewer mistakes than a person: the dataset has one label per frame and no second rater, so the human error rate is unknown. What changes is that the automatic part has a measured error rate, written into every record, where today there is none. The frames that still need a person also arrive in a useful order: within the review queue at a 10 % target the score still separates good from bad (AUROC {{ f2(S10.review_queue_auroc) }}), so a reviewer who only has time for the first third of the queue meets {{ pct(S10.bad_found_in_first_third_of_queue) }} of its bad frames rather than a third of them.
+
+**Time points that would be lost.** A frame that is unusable but noticed only at analysis cannot be taken again, because the culture has moved on: the time point is lost. The acquisition gate flags {{ pct(S10.sent_to_reacquire) }} of frames while the chip is still on the stage, experts had labelled {{ pct(S10.bad_among_reacquire) }} of those bad (against 44 % of all frames), and re-imaging costs one more exposure.
+
+### 7.2 A quality layer for organ-on-a-chip data assets and digital twins
+
+The long-term direction of this challenge is an AI-driven digital twin of organ-on-a-chip systems, built on accumulated chip data and moving the field from describing experiments to predicting them. Models of that kind learn from whatever frames they are given. In this dataset experts judged 44 % of frames bad, and section 2.2 showed that "bad" mixes failed cultures with failed images. A model trained on an archive without that distinction treats a smeared frame of a healthy culture and a sharp frame of a detached one alike, and can learn acquisition artefacts as biology. Quality control is therefore not an add-on to a data asset but its first layer, and the audit record is designed to be that layer:
+
+- **A decision and a calibrated probability.** A training set can be filtered at a stated contamination level (frames passed at a 10 % target were {{ pct1(S10.bad_among_passed) }} bad on unseen dates), or every frame can be kept and weighted by P(good) instead of discarded.
+- **Five acquisition descriptors.** A downstream model can take focus, streak, occlusion and exposure as covariates, so that drift in imaging is not mistaken for an effect of a compound or of time.
+- **Model version and image hash.** Each decision is tied to the exact bytes it was made on and to the model that made it, so it can be traced, audited and recomputed when the model changes. Re-scoring is cheap: at {{ RT.cpu_s }} s per frame on a laptop CPU the whole 3,072-frame archive is scored again in about {{ minutes(3072, RT.cpu_s) }} minutes ({{ minutes(3072, RT.gpu_s) }} on a laptop GPU).
+
+**From frames to chips.** The record describes a frame, while a twin models a chip over time. With chip and channel identifiers, which the public dataset does not contain, the same records add up to a quality time course for each chip: when a culture first scores low, whether it recovers, and which time points have to be imaged again.
+
+**Other tissues, including neural models.** The withheld-cell-line experiment is evidence of transfer across epithelial and endothelial monolayers (section 5.5). It is not evidence for tissues with a different morphology, such as neuronal networks or three-dimensional organoids, and we make no such claim. Because the backbone is frozen and the classifier has 384 weights, finding out costs labelled reference frames rather than a training run; section 7.3 gives the procedure.
+
+### 7.3 Adoption on a new platform
+
+Adapting the system to a new microscope or tissue means labelling reference frames and refitting in seconds, not training a network. The camera experiment (section 5.6) gives a first estimate of the labelling cost, and the recommended procedure follows from it:
+
+1. **Review-only mode.** Every frame goes to a person, and the console records their decisions, which become the local reference labels. Nothing is passed automatically.
+2. **Refit.** In the camera experiment, two labelled sessions of the new camera raised AUROC from {{ f3(CTC[0].auroc_mean) }} to {{ f3(CTC[2].auroc_mean) }} on the colour camera and from {{ f3(CTG[0].auroc_mean) }} to {{ f3(CTG[2].auroc_mean) }} on the grey one; with eight sessions (about {{ int(CTC[4].mean_labelled_frames) }} colour or {{ int(CTG[4].mean_labelled_frames) }} grey frames) the grey camera was back at its within-camera level. The acquisition limits are percentile tails of the reference frames and are refitted at the same time.
+3. **Automatic passing.** Switch it on only when held-out sessions of the new platform meet the chosen target, and check again after any change of instrument, protocol or cell line.
+
+### 7.4 What would make it stronger
+
+Per-expert labels to measure the agreement ceiling; chip and channel identifiers to move from frames to chips; data from a second laboratory and from other tissues; and a prospective study that replaces the assumed seconds per frame of section 7.1 with measured review time and compares downstream assay quality with and without the gate.
 
 ## 8. Reproducibility
 

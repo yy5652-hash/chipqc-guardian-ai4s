@@ -104,12 +104,12 @@ def namespace():
     return dict(
         per_date_rows=per_date_rows, day_rows=day_rows,
         H=H, REP=REP, LK=load("leakage"), B=load("baselines"), U=load("unseen_cell_line"), LS=load("label_structure"), G=load("acquisition_gate"),
-        S05=SO["0.05"].summary, S10=SO["0.1"].summary, S20=SO["0.2"].summary, CT=CT, CTC=CT.adaptation.colour.rows, CTG=CT.adaptation.grey.rows, CTX=load("camera_backbones"), D=D,
+        S05=SO["0.05"].summary, S10=SO["0.1"].summary, S15=SO["0.15"].summary, S20=SO["0.2"].summary, CT=CT, CTC=CT.adaptation.colour.rows, CTG=CT.adaptation.grey.rows, CTX=load("camera_backbones"), D=D,
         DS=Box({k: [lv["caught_by_its_rule"] for lv in v["levels"]] for k, v in D["faults"].items()}),
         IMG=Box(grey=f"{grey:,}", colour=f"{sum(f.frames for f in IMG.image_formats) - grey:,}"), RT=runtime, cells="6,912",
         f1=lambda x: f"{x:.1f}", f2=lambda x: f"{x:.2f}", f3=lambda x: f"{x:.3f}", pct=lambda x: f"{x:.0%}".replace("%", " %"), pct1=lambda x: f"{x:.1%}".replace("%", " %"),
         ci=lambda d: f"{d['ci95'][0]:.3f}–{d['ci95'][1]:.3f}", ci2=lambda c: f"{c[0]:.2f}–{c[1]:.2f}", ci3=lambda c: f"{c[0]:.3f}–{c[1]:.3f}", int=lambda x: f"{int(round(x)):,}",
-        f6=lambda x: f"{x:.6f}", UC=wrap(json.loads((R / "unseen_cell_line.json").read_text()).get("_comparison", {}).get("lines", {})),
+        f6=lambda x: f"{x:.6f}", minutes=lambda frames, s: f"{frames * float(s) / 60:.0f}", UC=wrap(json.loads((R / "unseen_cell_line.json").read_text()).get("_comparison", {}).get("lines", {})),
         sup_g2c=sup("grey_to_colour"), sup_c2g=sup("colour_to_grey"),
         WEB=wrap(json.loads((ROOT / "docs/model/browser_parity.json").read_text())), FS=load("first_submission_split"), links=wrap(json.loads((ROOT / "docs_templates/links.json").read_text())), pages=PAGES[0],
         representation_rows=representation_rows, outcome_rows=outcome_rows, diff=diff, signed=signed, main=main, M=wrap(json.loads((ROOT / "models/guardian-v2/model.json").read_text())),
@@ -138,7 +138,11 @@ def typeset(markdown: str, out: Path):
     from reportlab.platypus import BaseDocTemplate, CondPageBreak, Frame, Image, KeepTogether, PageTemplate, Paragraph, Preformatted, Spacer, Table, TableStyle
 
     fonts = "/System/Library/Fonts/Supplemental/"
-    for name, file in (("Body", "Arial.ttf"), ("Body-Bold", "Arial Bold.ttf"), ("Body-Italic", "Arial Italic.ttf"), ("Mono", "Courier New.ttf")):
+    files = (("Body", "Arial.ttf"), ("Body-Bold", "Arial Bold.ttf"), ("Body-Italic", "Arial Italic.ttf"), ("Mono", "Courier New.ttf"))
+    if not Path(fonts + "Arial.ttf").exists():     # outside macOS: the Liberation fonts have the metrics of Arial and Courier New
+        fonts = "/usr/share/fonts/truetype/liberation/"
+        files = (("Body", "LiberationSans-Regular.ttf"), ("Body-Bold", "LiberationSans-Bold.ttf"), ("Body-Italic", "LiberationSans-Italic.ttf"), ("Mono", "LiberationMono-Regular.ttf"))
+    for name, file in files:
         pdfmetrics.registerFont(TTFont(name, fonts + file))
     pdfmetrics.registerFontFamily("Body", normal="Body", bold="Body-Bold", italic="Body-Italic", boldItalic="Body-Bold")
     INK, INK2, MUTED, LINE, WASH, LINK = (colors.HexColor(c) for c in ("#0b0b0b", "#3d3c3a", "#6b6a66", "#d6d5cf", "#f4f3ef", "#1c5cab"))
