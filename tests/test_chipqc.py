@@ -66,13 +66,13 @@ def test_no_threshold_when_the_target_is_unreachable():
 
 
 def make_model(tmp_path, X, y, C=0.1):
-    scaler, clf = fit_head(X, y, C)
+    norm, scaler, clf = fit_head(X, y, C)
     w, mu, sd = clf.coef_[0], scaler.mean_, scaler.scale_
-    spec = {"name": "test", "created_utc": "2026-01-01T00:00:00Z", "backbone": "dinov2_vits14", "cell_weights": list(w / sd),
+    spec = {"name": "test", "created_utc": "2026-01-01T00:00:00Z", "backbone": "dinov2_vits14", "embedding_norm": norm, "cell_weights": list(w / sd),
             "cell_bias": float(clf.intercept_[0] - (w * mu / sd).sum()), "platt": [0.8, 0.1], "thresholds": {"0.1": {"t_pass": 0.8}},
             "default_error_target": 0.1, "acquisition_limits": LIMITS, "embedding_mean": list(mu), "embedding_std": list(sd)}
     (tmp_path / "model.json").write_text(json.dumps(spec))
-    return Guardian(tmp_path), (scaler, clf)
+    return Guardian(tmp_path), (norm, scaler, clf)
 
 
 def test_evidence_map_averages_exactly_to_the_score(tmp_path):
@@ -86,6 +86,7 @@ def test_evidence_map_averages_exactly_to_the_score(tmp_path):
     # and the score is the calibrated logistic regression on the mean descriptor
     logit = head_logits(head, cells.reshape(-1, 16).mean(0, keepdims=True).astype(np.float64))[0]
     assert p == pytest.approx(float(sigmoid(0.8 * logit + 0.1)), abs=1e-5)
+    assert g.p_good(cells.reshape(-1, 16).mean(0, keepdims=True).astype(np.float64))[0] == pytest.approx(p, abs=1e-6)
 
 
 def test_nested_protocol_scores_every_frame_once_per_repeat_and_finds_real_signal():

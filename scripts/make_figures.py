@@ -72,7 +72,7 @@ def fig_protocols():
 
 def fig_representations():
     rep = load("representations")
-    order = [k for k in ("mobilenet_v2_224crop", "mobilenet_v2_672", "mobilenet_v2_1344", "mobilenet_v2_2048", "resnet50_1344", "convnext_tiny_1344", "dinov2_vits14_2x2", "dinov2_vits14", "dinov2_vitb14", "dinov2_vits14_4x4", "dinov2_vits14_l4", "dinov2_vits14_4x4_l4") if k in rep]
+    order = [k for k in ("mobilenet_v2_224crop", "mobilenet_v2_672", "mobilenet_v2_1344", "mobilenet_v2_2048", "resnet50_1344", "convnext_tiny_1344", "dinov2_vits14_2x2", "dinov2_vits14_no_norm", "dinov2_vits14", "dinov2_vitb14", "dinov2_vits14_4x4", "dinov2_vits14_l4", "dinov2_vitb14_4x4_l4", "dinov2_vits14_4x4_l4_no_norm", "dinov2_vits14_4x4_l4") if k in rep]
     fig, ax = plt.subplots(figsize=(7.6, 0.42 * len(order) + 1.0))
     hbars(ax, [rep[k]["representation"] for k in order], [rep[k]["auroc"]["value"] for k in order], ci=[rep[k]["auroc"]["ci95"] for k in order], xlim=(0.5, 0.95))
     ax.set_xlabel("AUROC on held-out acquisition dates (bar: point estimate, line: 95 % interval over dates)")
@@ -294,8 +294,7 @@ def image_panels(man, images):
     g = Guardian(ROOT / "models/guardian-v2-demo")
     held = man[man.date.isin(g.spec["held_out_dates"])].copy()
     X = np.load(ROOT / f"features/{g.spec['backbone']}.npz")["embeddings"]
-    A, B = g.platt
-    held["p"] = 1 / (1 + np.exp(-(A * (X[held.index] @ g.v + g.b) + B)))
+    held["p"] = g.p_good(X[held.index].astype(np.float64))
     d = pd.read_csv(ROOT / "features/acquisition_descriptors.csv").drop(columns="image_id")
     held["clean"] = [not acquisition_flags(r, g.limits) for r in d.iloc[held.index].to_dict("records")]
 

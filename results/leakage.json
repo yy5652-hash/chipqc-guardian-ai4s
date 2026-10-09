@@ -3,10 +3,10 @@
   "test_frames": 656,
   "C": 0.003,
   "accuracy": 0.8810975609756098,
-  "auroc": 0.9414677776208633,
-  "precision_good": 0.8746736292428199,
-  "recall_good": 0.9178082191780822,
-  "balanced_accuracy": 0.8764298827849174,
+  "auroc": 0.9438497387374665,
+  "precision_good": 0.8727272727272727,
+  "recall_good": 0.9205479452054794,
+  "balanced_accuracy": 0.8760815327401967,
   "test_dates": 57,
   "test_dates_also_in_training": 57,
   "published_baseline": {
@@ -17,7 +17,7 @@
   }
  },
  "random_image_folds": {
-  "auroc": 0.9391027696996962,
+  "auroc": 0.9420293910621379,
   "accuracy": 0.8720703125
  }
 }

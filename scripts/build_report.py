@@ -55,10 +55,13 @@ def namespace():
     labels = {"mobilenet_v2_224crop": "MobileNetV2, 224 px centre crop (first submission)", "mobilenet_v2_672": "MobileNetV2, whole frame, 672 px",
               "mobilenet_v2_1344": "MobileNetV2, whole frame, 1344 px", "mobilenet_v2_2048": "MobileNetV2, whole frame, 2048 px (native)",
               "resnet50_1344": "ResNet-50, whole frame, 1344 px", "convnext_tiny_1344": "ConvNeXt-Tiny, whole frame, 1344 px",
-              "dinov2_vits14_2x2": "DINOv2 ViT-S/14, whole frame at 896 px, 2 × 2 tiles", "dinov2_vits14": "DINOv2 ViT-S/14, whole frame at 1344 px, 3 × 3 tiles (second submission)",
-              "dinov2_vitb14": "DINOv2 ViT-B/14, whole frame at 1344 px, 3 × 3 tiles", "dinov2_vits14_4x4": "DINOv2 ViT-S/14, whole frame at 1792 px, 4 × 4 tiles",
-              "dinov2_vits14_l4": "DINOv2 ViT-S/14, 1344 px, 3 × 3 tiles, last four blocks",
-              "dinov2_vits14_4x4_l4": "**DINOv2 ViT-S/14, 1792 px, 4 × 4 tiles, last four blocks (released model)**"}
+              "dinov2_vits14_2x2": "DINOv2 ViT-S/14, whole frame at 896 px, 2 × 2 tiles",
+              "dinov2_vits14_no_norm": "DINOv2 ViT-S/14, 1344 px, 3 × 3 tiles, last block, head without normalisation (second submission as released)",
+              "dinov2_vits14": "DINOv2 ViT-S/14, whole frame at 1344 px, 3 × 3 tiles", "dinov2_vitb14": "DINOv2 ViT-B/14, whole frame at 1344 px, 3 × 3 tiles",
+              "dinov2_vits14_4x4": "DINOv2 ViT-S/14, whole frame at 1792 px, 4 × 4 tiles", "dinov2_vits14_l4": "DINOv2 ViT-S/14, 1344 px, 3 × 3 tiles, last four blocks",
+              "dinov2_vitb14_4x4_l4": "DINOv2 ViT-B/14, 1792 px, 4 × 4 tiles, last four blocks",
+              "dinov2_vits14_4x4_l4_no_norm": "DINOv2 ViT-S/14, 1792 px, 4 × 4 tiles, last four blocks, head without normalisation",
+              "dinov2_vits14_4x4_l4": "**DINOv2 ViT-S/14, 1792 px, 4 × 4 tiles, last four blocks, unit-length embedding (released model)**"}
 
     def representation_rows():
         rows = []

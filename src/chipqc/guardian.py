@@ -44,6 +44,7 @@ class Guardian:
         self.v = np.asarray(self.spec["cell_weights"], dtype=np.float32)
         self.b = float(self.spec["cell_bias"])
         self.platt = tuple(self.spec["platt"])
+        self.norm = self.spec.get("embedding_norm")                      # "l2": the frame embedding is scaled to unit length
         self.limits = self.spec["acquisition_limits"]
         self.default_target = str(self.spec["default_error_target"])
         self._device, self._encoder, self._ref = device, None, None
@@ -70,18 +71,29 @@ class Guardian:
     def pass_threshold(self, error_target: float | str | None = None) -> float:
         return float(self.spec["thresholds"][str(error_target) if error_target is not None else self.default_target]["t_pass"])
 
+    def scale(self, embedding: np.ndarray) -> float:
+        """The frame-level factor of the released head: 1 / |mean descriptor| for a unit-length embedding, else 1."""
+        return float(1.0 / np.linalg.norm(embedding)) if self.norm == "l2" else 1.0
+
     def score_cells(self, cells: np.ndarray) -> tuple[float, np.ndarray]:
-        """cells: h x w x C descriptors of one frame -> (P(good), evidence map). The map averages to the frame's log-odds."""
+        """cells: h x w x C descriptors of one frame -> (P(good), evidence map). The map averages to the frame's log-odds:
+        each patch's share is v . f_i scaled by the frame's normalisation factor, plus the bias."""
         a, c = self.platt
-        evidence = a * (cells @ self.v + self.b) + c
+        evidence = a * (self.scale(cells.mean(axis=(0, 1))) * (cells @ self.v) + self.b) + c
         return float(1.0 / (1.0 + np.exp(-evidence.mean()))), evidence
+
+    def p_good(self, embeddings: np.ndarray) -> np.ndarray:
+        """Calibrated P(good) for an array of frame embeddings (rows), as score_cells would give from their cells."""
+        a, c = self.platt
+        z = (embeddings @ self.v) * np.array([self.scale(e) for e in embeddings]) + self.b
+        return 1.0 / (1.0 + np.exp(-(a * z + c)))
 
     def neighbours(self, embedding: np.ndarray, k: int = 3) -> list[dict]:
         ref = self.reference
         if ref is None:
             return []
         mu, sd = np.asarray(self.spec["embedding_mean"], dtype=np.float32), np.asarray(self.spec["embedding_std"], dtype=np.float32)
-        q = (embedding - mu) / sd
+        q = (embedding * self.scale(embedding) - mu) / sd
         sim = ref["unit"] @ (q / np.linalg.norm(q))
         out = []
         for label in (1, 0):

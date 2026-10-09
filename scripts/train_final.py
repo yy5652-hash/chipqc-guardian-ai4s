@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from chipqc.backbone import BACKBONES  # noqa: E402
 from chipqc.data import load_manifest  # noqa: E402
-from chipqc.protocol import C_GRID, OFFERED_TARGETS, date_folds, fit_head, fit_platt, head_logits, sigmoid  # noqa: E402
+from chipqc.protocol import C_GRID, NORM, OFFERED_TARGETS, date_folds, fit_head, fit_platt, head_logits, normalise, sigmoid  # noqa: E402
 from chipqc.triage import choose_thresholds  # noqa: E402
 from sklearn.metrics import roc_auc_score  # noqa: E402
 
@@ -51,9 +51,9 @@ thresholds = {}
 for t in OFFERED_TARGETS:                               # a released model has pass thresholds only: there is no automatic FAIL
     thresholds[str(t)] = {"t_pass": round(choose_thresholds(p_cross, y, t)[1], 4)}
 
-scaler, clf = fit_head(X, y, C)
+_, scaler, clf = fit_head(X, y, C)
 w, mu, sd = clf.coef_[0], scaler.mean_, scaler.scale_
-cell_weights = w / sd                                   # frame logit = mean over cells of (cell . cell_weights + cell_bias)
+cell_weights = w / sd                                   # frame logit = mean over cells of (cell . cell_weights / |mean cell| + cell_bias)
 cell_bias = float(clf.intercept_[0] - (w * mu / sd).sum())
 
 d = pd.read_csv(a.descriptors)[keep].reset_index(drop=True)
@@ -77,7 +77,7 @@ spec = {
     "name": a.out.name, "created_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "backbone": str(f["backbone"]), "tile": list(BACKBONES[str(f["backbone"])]["tile"]), "grid": list(BACKBONES[str(f["backbone"])]["grid"]),
     "frame_size": [BACKBONES[str(f["backbone"])]["tile"][i] * BACKBONES[str(f["backbone"])]["grid"][i] for i in (0, 1)],
-    "cell_weights": [round(float(v), 8) for v in cell_weights], "cell_bias": round(cell_bias, 8),
+    "embedding_norm": NORM, "cell_weights": [round(float(v), 8) for v in cell_weights], "cell_bias": round(cell_bias, 8),
     "platt": [round(A, 6), round(B, 6)], "thresholds": thresholds, "default_error_target": a.default_error_target,
     "acquisition_limits": limits, "atlas": a.atlas, "held_out_dates": list(a.exclude_dates),
     "embedding_mean": [round(float(v), 6) for v in mu], "embedding_std": [round(float(v), 6) for v in sd],
@@ -88,7 +88,7 @@ spec = {
 }
 a.out.mkdir(parents=True, exist_ok=True)
 (a.out / "model.json").write_text(json.dumps(spec, indent=1))
-unit = (X - mu) / sd
+unit = (normalise(X, NORM) - mu) / sd
 np.savez_compressed(a.out / "reference.npz", embeddings=unit.astype(np.float16), image_id=man.image_id.to_numpy().astype(str),
                     label_good=y.astype(np.int8), cell_line=man.cell_line.to_numpy().astype(str))
 print(f"C={C}  cross-fitted AUROC {spec['training']['cross_fitted_auroc']}  platt {spec['platt']}  thresholds {thresholds}")

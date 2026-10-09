@@ -8,7 +8,7 @@ A quality gate for brightfield frames of organ-on-a-chip cultures. Input: one fr
 |---|---|
 | Acquisition gate | five descriptors on the grey frame at 1024 × 768 px; limits stored in `model.json` |
 | Representation | frame resized to 1792 × 1344 px, 4 × 4 tiles of 448 × 336 px, frozen DINOv2 ViT-S/14 with registers; each patch described by its tokens after the last four blocks; mean of {{ cells }} patch descriptors (1,536 numbers) |
-| Classifier | L2-regularised logistic regression (C = {{ M.training.C }}) on the standardised mean descriptor |
+| Classifier | L2-regularised logistic regression (C = {{ M.training.C }}) on the standardised, unit-length mean descriptor |
 | Calibration | two-parameter logistic map fitted on out-of-fold log-odds |
 | Decision | pass threshold per target: the one-sided 90 % Wilson bound of the share of bad frames among passed training-date frames must not exceed the target |
 
@@ -34,7 +34,7 @@ Not intended for: clinical or regulatory decisions; judging viability, barrier f
 |---|---|---|---|---|
 {{ outcome_rows() }}
 
-The 5 % row is shown for completeness; that target is not met and is not offered in the console.
+The 5 % row is shown for completeness; that target is met only narrowly, on few frames, and is not offered in the console.
 
 ## Known failure modes
 

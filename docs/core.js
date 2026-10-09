@@ -161,13 +161,20 @@ export function tileTensor(planes, row, col) {
 
 export const MAP_W = (GRID * TILE_W) / PATCH, MAP_H = (GRID * TILE_H) / PATCH;      // 128 x 96 patches
 
-/** Sixteen tile outputs (24 x 32 each, row-major tiles) -> one 96 x 128 evidence map and the frame's P(good). */
-export function assemble(tileEvidence) {
+/** Sixteen tile outputs ({projection: 24 x 32 of v . f_i, tileMean: C}, row-major tiles) -> one 96 x 128 evidence map and
+ * the frame's P(good). The frame embedding is the mean of the tile means; with the unit-length head its norm scales every
+ * patch's projection equally, so the map still averages exactly to the frame's log-odds (mirrors Guardian.score_cells). */
+export function assemble(tiles, head) {
   const th = TILE_H / PATCH, tw = TILE_W / PATCH, map = new Float32Array(MAP_W * MAP_H);
+  const C = tiles[0].tileMean.length, mean = new Float64Array(C);
+  for (const t of tiles) for (let c = 0; c < C; c++) mean[c] += t.tileMean[c] / tiles.length;
+  let scale = 1;
+  if (head.embedding_norm === "l2") { let n = 0; for (let c = 0; c < C; c++) n += mean[c] * mean[c]; scale = 1 / Math.sqrt(n); }
+  const [a, c0] = head.platt, b = head.cell_bias;
   let sum = 0;
-  tileEvidence.forEach((e, t) => {
-    const row = Math.floor(t / GRID), col = t % GRID;
-    for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) { const v = e[y * tw + x]; map[(row * th + y) * MAP_W + col * tw + x] = v; sum += v; }
+  tiles.forEach((t, i) => {
+    const row = Math.floor(i / GRID), col = i % GRID;
+    for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) { const v = a * (scale * t.projection[y * tw + x] + b) + c0; map[(row * th + y) * MAP_W + col * tw + x] = v; sum += v; }
   });
   return { map, pGood: 1 / (1 + Math.exp(-sum / map.length)) };
 }

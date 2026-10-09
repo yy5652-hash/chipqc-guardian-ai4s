@@ -17,6 +17,7 @@ BACKBONES = {
     "dinov2_vits14": {"kind": "vit", "timm": "vit_small_patch14_reg4_dinov2.lvd142m", "dim": 384, "tile": (448, 336), "grid": (3, 3)},
     "dinov2_vits14_l4": {"kind": "vit", "timm": "vit_small_patch14_reg4_dinov2.lvd142m", "dim": 1536, "tile": (448, 336), "grid": (3, 3), "blocks": 4},
     "dinov2_vits14_4x4_l4": {"kind": "vit", "timm": "vit_small_patch14_reg4_dinov2.lvd142m", "dim": 1536, "tile": (448, 336), "grid": (4, 4), "blocks": 4},
+    "dinov2_vitb14_4x4_l4": {"kind": "vit", "timm": "vit_base_patch14_reg4_dinov2.lvd142m", "dim": 3072, "tile": (448, 336), "grid": (4, 4), "blocks": 4},
     "dinov2_vitb14": {"kind": "vit", "timm": "vit_base_patch14_reg4_dinov2.lvd142m", "dim": 768, "tile": (448, 336), "grid": (3, 3)},
     "convnext_tiny": {"kind": "cnn", "torchvision": ("convnext_tiny", "ConvNeXt_Tiny_Weights", "IMAGENET1K_V1"), "dim": 768},
     "mobilenet_v2": {"kind": "cnn", "torchvision": ("mobilenet_v2", "MobileNet_V2_Weights", "IMAGENET1K_V2"), "dim": 1280},

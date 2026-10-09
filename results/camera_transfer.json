@@ -3,12 +3,12 @@
   "grey": {
    "frames": 2048,
    "dates": 16,
-   "auroc": 0.8670551157245163
+   "auroc": 0.876872451342393
   },
   "colour": {
    "frames": 1024,
    "dates": 44,
-   "auroc": 0.8194923401676176
+   "auroc": 0.8284009446778273
   }
  },
  "adaptation": {
@@ -19,37 +19,37 @@
     {
      "labelled_dates_from_new_camera": 0,
      "mean_labelled_frames": 0.0,
-     "auroc_mean": 0.7237862352916589,
-     "auroc_p10": 0.7237862352916589,
-     "auroc_p90": 0.7237862352916589
+     "auroc_mean": 0.7716262252596818,
+     "auroc_p10": 0.7716262252596818,
+     "auroc_p90": 0.7716262252596818
     },
     {
      "labelled_dates_from_new_camera": 1,
      "mean_labelled_frames": 27.633333333333333,
-     "auroc_mean": 0.7361949731456238,
-     "auroc_p10": 0.7194933172241937,
-     "auroc_p90": 0.7513650768208693
+     "auroc_mean": 0.7783873513002019,
+     "auroc_p10": 0.7665146594032141,
+     "auroc_p90": 0.7913962699247072
     },
     {
      "labelled_dates_from_new_camera": 2,
      "mean_labelled_frames": 47.5,
-     "auroc_mean": 0.74961521264485,
-     "auroc_p10": 0.7293013577751226,
-     "auroc_p90": 0.7807912335620637
+     "auroc_mean": 0.7819902096027876,
+     "auroc_p10": 0.7680631663095882,
+     "auroc_p90": 0.8023497599845952
     },
     {
      "labelled_dates_from_new_camera": 4,
      "mean_labelled_frames": 90.96666666666667,
-     "auroc_mean": 0.7467603760675411,
-     "auroc_p10": 0.7087653502167556,
-     "auroc_p90": 0.7844614988537605
+     "auroc_mean": 0.7759591257661864,
+     "auroc_p10": 0.7332370173970396,
+     "auroc_p90": 0.8066418778102068
     },
     {
      "labelled_dates_from_new_camera": 8,
      "mean_labelled_frames": 175.5,
-     "auroc_mean": 0.7802094361764318,
-     "auroc_p10": 0.7527700342922509,
-     "auroc_p90": 0.814403050344813
+     "auroc_mean": 0.7989207650308032,
+     "auroc_p10": 0.7778220025616307,
+     "auroc_p90": 0.8281013209384359
     }
    ]
   },
@@ -60,37 +60,37 @@
     {
      "labelled_dates_from_new_camera": 0,
      "mean_labelled_frames": 0.0,
-     "auroc_mean": 0.7540220010336055,
-     "auroc_p10": 0.7540220010336055,
-     "auroc_p90": 0.7540220010336055
+     "auroc_mean": 0.7929346632775652,
+     "auroc_p10": 0.7929346632775652,
+     "auroc_p90": 0.7929346632775652
     },
     {
      "labelled_dates_from_new_camera": 1,
      "mean_labelled_frames": 141.73333333333332,
-     "auroc_mean": 0.7844242317012592,
-     "auroc_p10": 0.7634718606947312,
-     "auroc_p90": 0.8141793228080979
+     "auroc_mean": 0.8051529981029724,
+     "auroc_p10": 0.7779563958170945,
+     "auroc_p90": 0.8341181275450756
     },
     {
      "labelled_dates_from_new_camera": 2,
      "mean_labelled_frames": 279.7,
-     "auroc_mean": 0.8098063032401548,
-     "auroc_p10": 0.7793510402858441,
-     "auroc_p90": 0.8341554082987196
+     "auroc_mean": 0.8248962119793767,
+     "auroc_p10": 0.7982194652115981,
+     "auroc_p90": 0.8447284280000805
     },
     {
      "labelled_dates_from_new_camera": 4,
      "mean_labelled_frames": 517.9,
-     "auroc_mean": 0.8256814714457085,
-     "auroc_p10": 0.8088413410181511,
-     "auroc_p90": 0.842462016700116
+     "auroc_mean": 0.8387411540677486,
+     "auroc_p10": 0.8208586011670006,
+     "auroc_p90": 0.8552403107034033
     },
     {
      "labelled_dates_from_new_camera": 8,
      "mean_labelled_frames": 1048.2,
-     "auroc_mean": 0.8602973034118419,
-     "auroc_p10": 0.8361164870045359,
-     "auroc_p90": 0.8841332030418695
+     "auroc_mean": 0.8692676231600894,
+     "auroc_p10": 0.8448887645433274,
+     "auroc_p90": 0.8900921851466231
     }
    ]
   }

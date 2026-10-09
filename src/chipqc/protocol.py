@@ -16,18 +16,26 @@ from sklearn.preprocessing import StandardScaler
 from .triage import apply_thresholds, choose_thresholds, triage_report
 
 C_GRID = (0.001, 0.003, 0.01, 0.03, 0.1)
+NORM = "l2"                                       # the released head: unit-length embedding, then standardisation
 ERROR_TARGETS = (0.05, 0.10, 0.15, 0.20)          # evaluated and reported
 OFFERED_TARGETS = (0.10, 0.15, 0.20)              # what a released model offers: the 5 % target was not met on held-out dates
 
 
-def fit_head(X: np.ndarray, y: np.ndarray, C: float):
-    scaler = StandardScaler().fit(X)
-    return scaler, LogisticRegression(C=C, max_iter=5000).fit(scaler.transform(X), y)
+def normalise(X: np.ndarray, norm: str | None) -> np.ndarray:
+    """`l2`: every frame embedding scaled to unit length. The scale is one number per frame, so each patch's share
+    of the score is scaled equally and the evidence map stays exact."""
+    return X / np.linalg.norm(X, axis=1, keepdims=True) if norm == "l2" else X
+
+
+def fit_head(X: np.ndarray, y: np.ndarray, C: float, norm: str | None = NORM):
+    Xn = normalise(X, norm)
+    scaler = StandardScaler().fit(Xn)
+    return norm, scaler, LogisticRegression(C=C, max_iter=5000).fit(scaler.transform(Xn), y)
 
 
 def head_logits(head, X: np.ndarray) -> np.ndarray:
-    scaler, clf = head
-    return clf.decision_function(scaler.transform(X))
+    norm, scaler, clf = head
+    return clf.decision_function(scaler.transform(normalise(X, norm)))
 
 
 def date_folds(dates: np.ndarray, k: int, seed: int):
@@ -46,17 +54,17 @@ def sigmoid(z):
     return 1.0 / (1.0 + np.exp(-z))
 
 
-def select_on_training_dates(X, y, dates, seed, inner=4, c_grid=C_GRID):
+def select_on_training_dates(X, y, dates, seed, inner=4, c_grid=C_GRID, norm=NORM):
     """Inner date-grouped CV: returns the chosen C and the out-of-fold logits it produced on the training dates."""
     z = {c: np.zeros(len(y)) for c in c_grid}
     for a, b in date_folds(dates, inner, seed):
         for c in c_grid:
-            z[c][b] = head_logits(fit_head(X[a], y[a], c), X[b])
+            z[c][b] = head_logits(fit_head(X[a], y[a], c, norm), X[b])
     best = max(c_grid, key=lambda c: roc_auc_score(y, z[c]))
     return best, z[best]
 
 
-def nested_evaluation(X, y, dates, repeats=3, outer=5, inner=4, c_grid=C_GRID, targets=ERROR_TARGETS, eligible=None):
+def nested_evaluation(X, y, dates, repeats=3, outer=5, inner=4, c_grid=C_GRID, targets=ERROR_TARGETS, eligible=None, norm=NORM):
     """Returns out-of-fold raw and calibrated P(good) averaged over repeats, the chosen C values, per-repeat triage
     outcomes, and the per-frame decisions (target -> repeats x frames array of PASS / REVIEW / FAIL codes).
 
@@ -69,9 +77,9 @@ def nested_evaluation(X, y, dates, repeats=3, outer=5, inner=4, c_grid=C_GRID, t
     for r in range(repeats):
         decision = {t: decisions[t][r] for t in targets}
         for tr, te in date_folds(dates, outer, r):
-            c, z_in = select_on_training_dates(X[tr], y[tr], dates[tr], 100 + r, inner, c_grid)
+            c, z_in = select_on_training_dates(X[tr], y[tr], dates[tr], 100 + r, inner, c_grid, norm)
             a, b = fit_platt(z_in, y[tr])
-            z = head_logits(fit_head(X[tr], y[tr], c), X[te])
+            z = head_logits(fit_head(X[tr], y[tr], c, norm), X[te])
             raw[r, te], cal[r, te] = sigmoid(z), sigmoid(a * z + b)
             chosen.append(c)
             keep = eligible[r][tr] if eligible is not None else np.ones(len(tr), dtype=bool)

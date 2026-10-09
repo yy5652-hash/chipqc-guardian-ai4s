@@ -84,7 +84,7 @@
   <h2>What you are looking at</h2>
   <ul>
     <li><b>Acquisition gate.</b> Five physical measurements decide whether the frame is a usable observation at all.</li>
-    <li><b>Culture-quality score.</b> The whole frame is read as 4 × 4 tiles by a frozen self-supervised vision transformer (DINOv2 ViT-S/14); a linear classifier on the average patch descriptor, taken after its last four blocks, gives a calibrated probability that experts would call the culture good.</li>
+    <li><b>Culture-quality score.</b> The whole frame is read as 4 × 4 tiles by a frozen self-supervised vision transformer (DINOv2 ViT-S/14); a linear classifier on the unit-length average patch descriptor, taken after its last four blocks, gives a calibrated probability that experts would call the culture good.</li>
     <li><b>Decision.</b> A frame passes only above a threshold fitted, on other acquisition dates, to keep the share of bad frames among passed frames under the target, with a safety margin. Everything else goes to a person.</li>
   </ul>
   <p id="headline" class="lede"></p>

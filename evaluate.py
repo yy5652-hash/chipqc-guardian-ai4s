@@ -18,7 +18,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 from chipqc.data import load_manifest  # noqa: E402
-from chipqc.protocol import (C_GRID, ERROR_TARGETS, date_bootstrap, date_folds, fit_head, head_logits, nested_evaluation,  # noqa: E402
+from chipqc.protocol import (C_GRID, ERROR_TARGETS, NORM, date_bootstrap, date_folds, fit_head, head_logits, nested_evaluation,  # noqa: E402
                              paired_date_bootstrap, select_on_training_dates, sigmoid, summarise)
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, precision_score, recall_score, roc_auc_score  # noqa: E402
 from sklearn.model_selection import StratifiedKFold  # noqa: E402
@@ -33,10 +33,11 @@ REPRESENTATIONS = {
     "resnet50_1344": "ResNet-50, whole frame, 1344 px",
     "convnext_tiny_1344": "ConvNeXt-Tiny, whole frame, 1344 px",
     "dinov2_vits14_2x2": "DINOv2 ViT-S/14, whole frame at 896 px, 2 x 2 tiles",
-    "dinov2_vits14": "DINOv2 ViT-S/14, whole frame at 1344 px, 3 x 3 tiles (second submission)",
+    "dinov2_vits14": "DINOv2 ViT-S/14, whole frame at 1344 px, 3 x 3 tiles (second submission's representation)",
     "dinov2_vitb14": "DINOv2 ViT-B/14, whole frame at 1344 px, 3 x 3 tiles",
     "dinov2_vits14_4x4": "DINOv2 ViT-S/14, whole frame at 1792 px, 4 x 4 tiles",
     "dinov2_vits14_l4": "DINOv2 ViT-S/14, 1344 px, 3 x 3 tiles, last four blocks",
+    "dinov2_vitb14_4x4_l4": "DINOv2 ViT-B/14, 1792 px, 4 x 4 tiles, last four blocks",
     "dinov2_vits14_4x4_l4": "DINOv2 ViT-S/14, 1792 px, 4 x 4 tiles, last four blocks (released model)",
 }
 
@@ -54,8 +55,8 @@ def mean_outcomes(outcomes):
     return {str(t): {k: float(np.mean([o[k] for o in rows])) for k in rows[0]} for t, rows in outcomes.items()}
 
 
-def protocol_row(X, y, dates, strata=None, repeats=3, n_boot=2000):
-    raw, cal, chosen, outcomes, decisions = nested_evaluation(X, y, dates, repeats=repeats)
+def protocol_row(X, y, dates, strata=None, repeats=3, n_boot=2000, norm=NORM):
+    raw, cal, chosen, outcomes, decisions = nested_evaluation(X, y, dates, repeats=repeats, norm=norm)
     s = summarise(y, raw, cal, dates, strata, n_boot)
     s["chosen_C"] = {str(c): chosen.count(c) for c in C_GRID}
     s["triage"] = mean_outcomes(outcomes)
@@ -85,6 +86,11 @@ def representations(man, out):
         rows[name] = {"representation": text, "dim": int(X.shape[1]), **{k: s[k] for k in ("auroc", "balanced_accuracy", "accuracy", "brier")}, "triage_at_10pct": s["triage"]["0.1"]}
         if name != MAIN:
             np.savez_compressed(out / "oof" / f"{name}.npz", p_good=oof[name].astype(np.float32), image_id=man.image_id.to_numpy().astype(str))
+    for name in ("dinov2_vits14", MAIN):                             # the same representations under the head of our second submission (no normalisation)
+        s, _, oof[f"{name}_no_norm"] = protocol_row(features(name, man), y, dates, norm=None)
+        rows[f"{name}_no_norm"] = {"representation": REPRESENTATIONS[name] + ", head without unit-length normalisation" + (" (second submission as released)" if name != MAIN else ""),
+                                   "dim": rows[name]["dim"], **{k: s[k] for k in ("auroc", "balanced_accuracy", "accuracy", "brier")}, "triage_at_10pct": s["triage"]["0.1"]}
+        np.savez_compressed(out / "oof" / f"{name}_no_norm.npz", p_good=oof[f"{name}_no_norm"].astype(np.float32), image_id=man.image_id.to_numpy().astype(str))
     for name in rows:                                               # the same resampled dates score both models, so the interval is for the difference itself
         if name != MAIN:
             rows[name]["auroc_minus_released"] = {"value": rows[name]["auroc"]["value"] - rows[MAIN]["auroc"]["value"],
@@ -97,11 +103,11 @@ def baselines(man, out):
     onehot = lambda v: (v[:, None] == np.unique(v)[None, :]).astype(np.float64)
     meta = np.concatenate([onehot(man.cell_line.to_numpy()), onehot(man.day_bin.to_numpy())], axis=1)
     rows = {"always_good": {"accuracy": float(y.mean()), "balanced_accuracy": 0.5, "auroc": 0.5}}
-    s, _, _ = protocol_row(meta, y, dates, n_boot=1000)
+    s, _, _ = protocol_row(meta, y, dates, n_boot=1000, norm=None)
     rows["metadata_only"] = {"inputs": "cell line and culture-day bin, no image", **{k: s[k] for k in ("auroc", "balanced_accuracy", "accuracy")}}
     import pandas as pd
     d = pd.read_csv(ROOT / "features/acquisition_descriptors.csv").drop(columns="image_id").to_numpy(dtype=np.float64)
-    s, _, _ = protocol_row(d, y, dates, n_boot=1000)
+    s, _, _ = protocol_row(d, y, dates, n_boot=1000, norm=None)
     rows["acquisition_descriptors_only"] = {"inputs": "five transparent acquisition descriptors", **{k: s[k] for k in ("auroc", "balanced_accuracy", "accuracy")}}
     return rows
 
@@ -133,10 +139,11 @@ def first_submission_split(man, out):
         X = features(name, man)
         if X is None:
             continue
-        c, z_in = select_on_training_dates(X[tr], y[tr], dates[tr], 0)
+        norm = None if name == "dinov2_vits14" else NORM                 # the second submission, as released
+        c, z_in = select_on_training_dates(X[tr], y[tr], dates[tr], 0, norm=norm)
         from chipqc.protocol import fit_platt
         a, b = fit_platt(z_in, y[tr])
-        p = sigmoid(a * head_logits(fit_head(X[tr], y[tr], c), X[te]) + b)
+        p = sigmoid(a * head_logits(fit_head(X[tr], y[tr], c, norm), X[te]) + b)
         lo, hi = date_bootstrap(roc_auc_score, y[te], p, dates[te], 2000)
         rows[name] = {"C": c, "auroc": float(roc_auc_score(y[te], p)), "ci95": [lo, hi], "balanced_accuracy": float(balanced_accuracy_score(y[te], p > 0.5)), "accuracy": float(accuracy_score(y[te], p > 0.5))}
     return rows

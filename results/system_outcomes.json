@@ -1,14 +1,14 @@
 {
  "0.05": {
   "PASS": {
-   "frames": 250.0,
-   "expert_good": 237.0,
-   "expert_bad": 13.0
+   "frames": 359.0,
+   "expert_good": 342.3333333333333,
+   "expert_bad": 16.666666666666668
   },
   "REVIEW": {
-   "frames": 2359.0,
-   "expert_good": 1333.0,
-   "expert_bad": 1026.0
+   "frames": 2250.0,
+   "expert_good": 1227.6666666666665,
+   "expert_bad": 1022.3333333333334
   },
   "REACQUIRE": {
    "frames": 463.0,
@@ -16,30 +16,30 @@
    "expert_bad": 306.0
   },
   "summary": {
-   "passed_automatically": 0.08138020833333333,
-   "bad_among_passed": 0.052,
+   "passed_automatically": 0.11686197916666667,
+   "bad_among_passed": 0.04642525533890437,
    "sent_to_reacquire": 0.15071614583333334,
    "bad_among_reacquire": 0.6609071274298056,
-   "left_for_a_person": 0.7679036458333334,
-   "bad_among_review": 0.4349300551080966,
-   "review_queue_auroc": 0.843383128602055,
-   "bad_found_in_first_third_of_queue": 0.6204481670706288,
+   "left_for_a_person": 0.732421875,
+   "bad_among_review": 0.45437037037037037,
+   "review_queue_auroc": 0.8428629849847353,
+   "bad_found_in_first_third_of_queue": 0.6080646891542991,
    "automatic_fail_if_it_existed": {
-    "frames": 0.019748263888888888,
-    "good_among_failed": 0.03296703296703297
+    "frames": 0.02419704861111111,
+    "good_among_failed": 0.04932735426008969
    }
   }
  },
  "0.1": {
   "PASS": {
-   "frames": 799.0,
-   "expert_good": 722.3333333333334,
-   "expert_bad": 76.66666666666667
+   "frames": 840.3333333333334,
+   "expert_good": 760.6666666666667,
+   "expert_bad": 79.66666666666667
   },
   "REVIEW": {
-   "frames": 1810.0,
-   "expert_good": 847.6666666666666,
-   "expert_bad": 962.3333333333334
+   "frames": 1768.6666666666667,
+   "expert_good": 809.3333333333334,
+   "expert_bad": 959.3333333333334
   },
   "REACQUIRE": {
    "frames": 463.0,
@@ -47,30 +47,30 @@
    "expert_bad": 306.0
   },
   "summary": {
-   "passed_automatically": 0.2600911458333333,
-   "bad_among_passed": 0.09595327492699209,
+   "passed_automatically": 0.2735460069444445,
+   "bad_among_passed": 0.09480364934549781,
    "sent_to_reacquire": 0.15071614583333334,
    "bad_among_reacquire": 0.6609071274298056,
-   "left_for_a_person": 0.5891927083333334,
-   "bad_among_review": 0.5316758747697975,
-   "review_queue_auroc": 0.8147642589349262,
-   "bad_found_in_first_third_of_queue": 0.5410079992975646,
+   "left_for_a_person": 0.5757378472222222,
+   "bad_among_review": 0.5424048247267245,
+   "review_queue_auroc": 0.8202434823120072,
+   "bad_found_in_first_third_of_queue": 0.5360461487990951,
    "automatic_fail_if_it_existed": {
-    "frames": 0.0876736111111111,
-    "good_among_failed": 0.1349009900990099
+    "frames": 0.09830729166666667,
+    "good_among_failed": 0.12472406181015452
    }
   }
  },
  "0.15": {
   "PASS": {
-   "frames": 1212.0,
-   "expert_good": 1049.0,
-   "expert_bad": 163.0
+   "frames": 1233.3333333333333,
+   "expert_good": 1071.0,
+   "expert_bad": 162.33333333333334
   },
   "REVIEW": {
-   "frames": 1397.0,
-   "expert_good": 521.0,
-   "expert_bad": 876.0
+   "frames": 1375.6666666666667,
+   "expert_good": 499.0000000000001,
+   "expert_bad": 876.6666666666666
   },
   "REACQUIRE": {
    "frames": 463.0,
@@ -78,30 +78,30 @@
    "expert_bad": 306.0
   },
   "summary": {
-   "passed_automatically": 0.39453125,
-   "bad_among_passed": 0.13448844884488448,
+   "passed_automatically": 0.4014756944444444,
+   "bad_among_passed": 0.13162162162162164,
    "sent_to_reacquire": 0.15071614583333334,
    "bad_among_reacquire": 0.6609071274298056,
-   "left_for_a_person": 0.4547526041666667,
-   "bad_among_review": 0.6270579813886901,
-   "review_queue_auroc": 0.7880346737007163,
-   "bad_found_in_first_third_of_queue": 0.4687760699388606,
+   "left_for_a_person": 0.44780815972222227,
+   "bad_among_review": 0.6372667797431548,
+   "review_queue_auroc": 0.7964842139313779,
+   "bad_found_in_first_third_of_queue": 0.4703348634564067,
    "automatic_fail_if_it_existed": {
-    "frames": 0.13129340277777776,
-    "good_among_failed": 0.16859504132231407
+    "frames": 0.15125868055555555,
+    "good_among_failed": 0.15136298421807745
    }
   }
  },
  "0.2": {
   "PASS": {
-   "frames": 1553.6666666666667,
-   "expert_good": 1282.3333333333335,
-   "expert_bad": 271.3333333333333
+   "frames": 1585.0,
+   "expert_good": 1308.0,
+   "expert_bad": 277.0
   },
   "REVIEW": {
-   "frames": 1055.3333333333333,
-   "expert_good": 287.66666666666663,
-   "expert_bad": 767.6666666666666
+   "frames": 1024.0,
+   "expert_good": 262.0,
+   "expert_bad": 762.0
   },
   "REACQUIRE": {
    "frames": 463.0,
@@ -109,17 +109,17 @@
    "expert_bad": 306.0
   },
   "summary": {
-   "passed_automatically": 0.5057508680555556,
-   "bad_among_passed": 0.17464063505685473,
+   "passed_automatically": 0.5159505208333334,
+   "bad_among_passed": 0.1747634069400631,
    "sent_to_reacquire": 0.15071614583333334,
    "bad_among_reacquire": 0.6609071274298056,
-   "left_for_a_person": 0.3435329861111111,
-   "bad_among_review": 0.7274162981680354,
-   "review_queue_auroc": 0.7519044959135398,
-   "bad_found_in_first_third_of_queue": 0.4164197177440956,
+   "left_for_a_person": 0.3333333333333333,
+   "bad_among_review": 0.744140625,
+   "review_queue_auroc": 0.755157195126735,
+   "bad_found_in_first_third_of_queue": 0.41689286230797973,
    "automatic_fail_if_it_existed": {
-    "frames": 0.19954427083333334,
-    "good_among_failed": 0.19303969548667754
+    "frames": 0.2134331597222222,
+    "good_among_failed": 0.1921708185053381
    }
   }
  }

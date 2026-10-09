@@ -58,9 +58,9 @@ async function assess(blob, onTile) {
     await new Promise((r) => setTimeout(r));                      // let the page repaint between tiles
     const input = new ort.Tensor("float32", tileTensor(planes, Math.floor(t / GRID), t % GRID), [1, 3, 336, 448]);
     const out = await state.session.run({ tiles: input });
-    tiles.push(Float32Array.from(await out.evidence.getData()));
+    tiles.push({ projection: Float32Array.from(await out.projection.getData()), tileMean: Float32Array.from(await out.tile_mean.getData()) });
   }
-  const { map, pGood } = assemble(tiles);
+  const { map, pGood } = assemble(tiles, state.meta.head);
   return { planes, acquisition, flags, map, pGood, seconds: (performance.now() - t0) / 1000 };
 }
 

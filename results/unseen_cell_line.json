@@ -2,62 +2,62 @@
  "A549": {
   "frames": 775,
   "dates": 24,
-  "auroc_line_never_seen": 0.7894465048589268,
+  "auroc_line_never_seen": 0.8054238455158599,
   "ci95": [
-   0.7043029194813013,
-   0.8653982096006816
+   0.7257738969019686,
+   0.87629715908312
   ],
-  "auroc_line_seen_dates_held_out": 0.7929048714457849
+  "auroc_line_seen_dates_held_out": 0.8165266106442577
  },
  "CACO": {
   "frames": 346,
   "dates": 17,
-  "auroc_line_never_seen": 0.9141408276235823,
+  "auroc_line_never_seen": 0.9147601904540704,
   "ci95": [
-   0.8231107556133851,
-   0.9704892888130443
+   0.8258224606988985,
+   0.9694508309866838
   ],
-  "auroc_line_seen_dates_held_out": 0.9057020090581813
+  "auroc_line_seen_dates_held_out": 0.9099214183408818
  },
  "HPMEC": {
   "frames": 1462,
   "dates": 29,
-  "auroc_line_never_seen": 0.8621836971947944,
+  "auroc_line_never_seen": 0.8698478123018389,
   "ci95": [
-   0.8120327786820464,
-   0.9082162198917842
+   0.8216131545191907,
+   0.9141809778080227
   ],
-  "auroc_line_seen_dates_held_out": 0.8661450312528308
+  "auroc_line_seen_dates_held_out": 0.8705442069027991
  },
  "HSAEC": {
   "frames": 244,
   "dates": 21,
-  "auroc_line_never_seen": 0.8845716882526697,
+  "auroc_line_never_seen": 0.8918427630084071,
   "ci95": [
-   0.7916654880627186,
-   0.9496541633935585
+   0.8030665052712628,
+   0.9570471248272515
   ],
-  "auroc_line_seen_dates_held_out": 0.8726047110505188
+  "auroc_line_seen_dates_held_out": 0.8795728243581005
  },
  "HUVEC": {
   "frames": 107,
   "dates": 4,
-  "auroc_line_never_seen": 0.9797101449275363,
+  "auroc_line_never_seen": 0.9869565217391304,
   "ci95": [
-   0.8666666666666667,
+   0.9333333333333333,
    1.0
   ],
-  "auroc_line_seen_dates_held_out": 0.9884057971014493
+  "auroc_line_seen_dates_held_out": 0.9956521739130435
  },
  "NHBE": {
   "frames": 138,
   "dates": 6,
-  "auroc_line_never_seen": 0.9468975468975469,
+  "auroc_line_never_seen": 0.918903318903319,
   "ci95": [
-   0.9130095424288973,
+   0.8742857142857143,
    1.0
   ],
-  "auroc_line_seen_dates_held_out": 0.9821067821067822
+  "auroc_line_seen_dates_held_out": 0.9717171717171718
  },
  "_comparison": {
   "representation": "ConvNeXt-Tiny, whole frame, 1344 px",
@@ -65,49 +65,49 @@
    "A549": {
     "frames": 775,
     "dates": 24,
-    "auroc_line_never_seen": 0.7852761216218331,
+    "auroc_line_never_seen": 0.7952443547251302,
     "ci95": [
-     0.70481643790706,
-     0.8667849157240961
+     0.7155901751784803,
+     0.8730072903191933
     ],
-    "auroc_line_seen_dates_held_out": 0.794446270128163
+    "auroc_line_seen_dates_held_out": 0.8063236467771466
    },
    "CACO": {
     "frames": 346,
     "dates": 17,
-    "auroc_line_never_seen": 0.8933147524484187,
+    "auroc_line_never_seen": 0.8936244338636627,
     "ci95": [
-     0.8031284875209994,
-     0.9574892291470134
+     0.8006205957297498,
+     0.9572153958176179
     ],
-    "auroc_line_seen_dates_held_out": 0.8859985290132777
+    "auroc_line_seen_dates_held_out": 0.8825146130917818
    },
    "HPMEC": {
     "frames": 1462,
     "dates": 29,
-    "auroc_line_never_seen": 0.8295059939004137,
+    "auroc_line_never_seen": 0.8284095026723435,
     "ci95": [
-     0.7514692256574788,
-     0.8895910404717623
+     0.7531276986675257,
+     0.8865222572010104
     ],
-    "auroc_line_seen_dates_held_out": 0.82556730682127
+    "auroc_line_seen_dates_held_out": 0.8286020019929343
    },
    "HSAEC": {
     "frames": 244,
     "dates": 21,
-    "auroc_line_never_seen": 0.8194349768991896,
+    "auroc_line_never_seen": 0.83640081799591,
     "ci95": [
-     0.7363322231714778,
-     0.8983206862975522
+     0.7522877518112211,
+     0.909435203053073
     ],
-    "auroc_line_seen_dates_held_out": 0.8382185866848444
+    "auroc_line_seen_dates_held_out": 0.8468529879572825
    },
    "HUVEC": {
     "frames": 107,
     "dates": 4,
-    "auroc_line_never_seen": 0.9992753623188405,
+    "auroc_line_never_seen": 0.9985507246376811,
     "ci95": [
-     0.9978632478632479,
+     0.9333333333333333,
      1.0
     ],
     "auroc_line_seen_dates_held_out": 1.0
@@ -117,10 +117,10 @@
     "dates": 6,
     "auroc_line_never_seen": 0.6862914862914863,
     "ci95": [
-     0.36605096418732785,
+     0.3599146661419389,
      1.0
     ],
-    "auroc_line_seen_dates_held_out": 0.9012987012987013
+    "auroc_line_seen_dates_held_out": 0.9056277056277056
    }
   }
  }

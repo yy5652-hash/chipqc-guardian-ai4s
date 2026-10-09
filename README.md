@@ -22,19 +22,19 @@ Measured on the public [Organ-on-a-Chip Image Dataset](https://doi.org/10.5281/z
 
 | | |
 |---|---|
-| AUROC, dates held out | **0.872** (95 % interval 0.842–0.900) |
-| Same protocol, 224 px centre crop (our first submission) | 0.738 |
-| Our second submission, same protocol (3 × 3 tiles, last block only) | 0.852; the released model gains 0.019 (0.007 to 0.031) |
-| Frozen 12-date test split of our first submission (first: 0.772, second: 0.859) | 0.884 |
+| AUROC, dates held out | **0.880** (95 % interval 0.851–0.907) |
+| Same protocol, 224 px centre crop (our first submission) | 0.742 |
+| Our second submission, same protocol (3 × 3 tiles, last block only) | 0.852; the released model gains 0.027 (0.013 to 0.042) |
+| Frozen 12-date test split of our first submission (first: 0.772, second: 0.859) | 0.885 |
 | Accuracy on the dataset authors' own split (published baseline 0.81) | 0.88 |
-| Cell line withheld from training: largest AUROC change over six lines | 0.04 |
-| Different camera, no local labels: AUROC | 0.72 and 0.75 (same camera: 0.82 and 0.87) |
-| At a 10 % target: passed automatically / bad among passed | 26 % / 9.6 % |
-| At a 20 % target: passed automatically / bad among passed | 51 % / 17.5 % |
+| Cell line withheld from training: largest AUROC change over six lines | 0.05 |
+| Different camera, no local labels: AUROC | 0.77 and 0.79 (same camera: 0.83 and 0.88) |
+| At a 10 % target: passed automatically / bad among passed | 27 % / 9.5 % |
+| At a 20 % target: passed automatically / bad among passed | 52 % / 17.5 % |
 | Sent back for re-acquisition / of those, labelled bad by experts | 15 % / 66 % |
-| Seconds per frame, laptop GPU / CPU | 0.25 / 0.82 |
+| Seconds per frame, laptop GPU / CPU | 0.26 / 0.86 |
 
-Two things the data do **not** support, and the system therefore does not do: automatic rejection (at a 10 % target, 13 % of the frames it would discard were good) and a 5 % pass target. Both are reported in the [technical report](ChipQC_Guardian_Technical_Report.pdf), sections 5.4 and 6.
+Two things the system deliberately does not do: automatic rejection (at a 10 % target, 12 % of the frames it would discard were good) and a 5 % pass target, which this version meets only narrowly (4.6 % bad among the 12 % of frames it passes) and therefore does not offer. Both are reported in the [technical report](ChipQC_Guardian_Technical_Report.pdf), sections 5.4 and 6.
 
 ![AUROC on held-out dates for each representation.](reports/figures/fig_representations.png)
 
@@ -53,7 +53,7 @@ streamlit run app.py                 # the review console
 
 ![The review console.](reports/figures/console_overview.png)
 
-The [browser demo](https://yy5652-hash.github.io/chipqc-guardian-ai4s/) (`docs/`) runs the same pipeline with ONNX Runtime Web: a JavaScript port of the frame reading and acquisition descriptors that matches the Python code (Pillow-compatible resampling), and the backbone, classifier and calibrator exported as one ONNX graph. On the bundled frames its P(good) differs from the Python reference by at most 0.000001 (`python scripts/check_web_demo.py`).
+The [browser demo](https://yy5652-hash.github.io/chipqc-guardian-ai4s/) (`docs/`) runs the same pipeline with ONNX Runtime Web: a JavaScript port of the frame reading and acquisition descriptors that matches the Python code (Pillow-compatible resampling), and the backbone, classifier and calibrator exported as one ONNX graph. On the bundled frames its P(good) differs from the Python reference by at most 0.000003 (`python scripts/check_web_demo.py`).
 
 ## Reproduce
 
@@ -75,7 +75,7 @@ bash scripts/reproduce_from_images.sh
 
 | Path | Contents |
 |---|---|
-| `src/chipqc/` | the package: frame reading, backbone, acquisition descriptors, evaluation protocol, decision rule, the assembled `Guardian`, rendering (623 lines) |
+| `src/chipqc/` | the package: frame reading, backbone, acquisition descriptors, evaluation protocol, decision rule, the assembled `Guardian`, rendering (644 lines) |
 | `inference.py`, `app.py`, `evaluate.py` | entry points: score frames, review console, all experiments |
 | `models/guardian-v2/` | the released model: `model.json` (weights, calibrator, thresholds, limits, evaluation summary) and reference embeddings with thumbnails |
 | `models/guardian-v2-demo/` | the same recipe fitted without dates 230524 and 230425, used for the bundled examples |
@@ -91,7 +91,7 @@ The clone command above uses `--depth 1`, which fetches only the current version
 ## Scope and limits
 
 - The score estimates what cell-biology experts called a good or bad culture in one laboratory's dataset. It is not a measurement of viability, barrier function or drug response, and it is not for clinical or regulatory decisions.
-- A new microscope or camera needs local reference frames: without them AUROC drops by about ten points. Run in review-only mode first; the report gives the labelling cost of repairing it.
+- A new microscope or camera needs local reference frames: without them AUROC drops by six to eight points. Run in review-only mode first; the report gives the labelling cost of repairing it.
 - Thresholds met their targets on held-out dates of this dataset. That is evidence, not a guarantee; re-check after any change of instrument, protocol or cell line.
 
 ## Data, licences and citation

@@ -27,8 +27,8 @@ spec = json.loads((a.model / "model.json").read_text())
 man = load_manifest(ROOT / "data/manifest.csv")
 X = np.load(a.features)["embeddings"]
 d = pd.read_csv(ROOT / "features/acquisition_descriptors.csv")
-A, B = spec["platt"]
-man["p"] = 1 / (1 + np.exp(-(A * (X @ np.asarray(spec["cell_weights"]) + spec["cell_bias"]) + B)))
+from chipqc.guardian import Guardian  # noqa: E402
+man["p"] = Guardian(a.model).p_good(X.astype(np.float64))
 man["n_flags"] = [len(acquisition_flags(r, spec["acquisition_limits"])) for r in d.drop(columns="image_id").to_dict("records")]
 t_pass = spec["thresholds"][str(spec["default_error_target"])]["t_pass"]
 held = man[man.date.isin(spec["held_out_dates"])].copy()

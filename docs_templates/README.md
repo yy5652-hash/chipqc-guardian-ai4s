@@ -14,7 +14,7 @@ Before an organ-on-a-chip culture is dosed, stained or measured, someone looks a
 
 **[Watch the {{ links.video_length }} film]({{ links.video }})**{{ ", also on [Bilibili](" + links.video_bilibili + ")" if links.video_bilibili else "" }} ([mp4]({{ links.video_file }})) · **[Try it in your browser]({{ links.demo }})** (the model runs on your machine; nothing is uploaded) · [Technical report (PDF)](ChipQC_Guardian_Technical_Report.pdf) · [Kaggle writeup](https://www.kaggle.com/competitions/ai-4-s-open-innovation-artificial-intelligence-for-life-scien/writeups/chipqc-guardian-reliable-ooc-image-quality-review) · [model card](MODEL_CARD.md) · [data card](DATA_CARD.md)
 
-The film was recorded with the previous version of the model (3 × 3 tiles, AUROC {{ f3(REP.dinov2_vits14.auroc.value) }}); the system and the workflow it shows are unchanged, and the numbers below are those of the released model.
+The film was recorded with the previous version of the model (3 × 3 tiles, AUROC {{ f3(REP.dinov2_vits14_no_norm.auroc.value) }}); the system and the workflow it shows are unchanged, and the numbers below are those of the released model.
 
 ## Results
 
@@ -24,7 +24,7 @@ Measured on the public [Organ-on-a-Chip Image Dataset](https://doi.org/10.5281/z
 |---|---|
 | AUROC, dates held out | **{{ f3(H.auroc.value) }}** (95 % interval {{ ci(H.auroc) }}) |
 | Same protocol, 224 px centre crop (our first submission) | {{ f3(REP.mobilenet_v2_224crop.auroc.value) }} |
-| Our second submission, same protocol (3 × 3 tiles, last block only) | {{ f3(REP.dinov2_vits14.auroc.value) }}; the released model gains {{ gain(REP.dinov2_vits14.auroc_minus_released) }} |
+| Our second submission, same protocol (3 × 3 tiles, last block only) | {{ f3(REP.dinov2_vits14_no_norm.auroc.value) }}; the released model gains {{ gain(REP.dinov2_vits14_no_norm.auroc_minus_released) }} |
 | Frozen 12-date test split of our first submission (first: {{ f3(FS.first_submission.auroc) }}, second: {{ f3(FS.dinov2_vits14.auroc) }}) | {{ f3(FS.dinov2_vits14_4x4_l4.auroc) }} |
 | Accuracy on the dataset authors' own split (published baseline 0.81) | {{ f2(LK.authors_split.accuracy) }} |
 | Cell line withheld from training: largest AUROC change over six lines | {{ f2(max_line_drop) }} |
@@ -34,7 +34,7 @@ Measured on the public [Organ-on-a-Chip Image Dataset](https://doi.org/10.5281/z
 | Sent back for re-acquisition / of those, labelled bad by experts | {{ pct(S10.sent_to_reacquire) }} / {{ pct(S10.bad_among_reacquire) }} |
 | Seconds per frame, laptop GPU / CPU | {{ RT.gpu_s }} / {{ RT.cpu_s }} |
 
-Two things the data do **not** support, and the system therefore does not do: automatic rejection (at a 10 % target, {{ pct(S10.automatic_fail_if_it_existed.good_among_failed) }} of the frames it would discard were good) and a 5 % pass target. Both are reported in the [technical report](ChipQC_Guardian_Technical_Report.pdf), sections 5.4 and 6.
+Two things the system deliberately does not do: automatic rejection (at a 10 % target, {{ pct(S10.automatic_fail_if_it_existed.good_among_failed) }} of the frames it would discard were good) and a 5 % pass target, which this version meets only narrowly ({{ pct1(S05.bad_among_passed) }} bad among the {{ pct(S05.passed_automatically) }} of frames it passes) and therefore does not offer. Both are reported in the [technical report](ChipQC_Guardian_Technical_Report.pdf), sections 5.4 and 6.
 
 ![AUROC on held-out dates for each representation.](reports/figures/fig_representations.png)
 
@@ -91,7 +91,7 @@ The clone command above uses `--depth 1`, which fetches only the current version
 ## Scope and limits
 
 - The score estimates what cell-biology experts called a good or bad culture in one laboratory's dataset. It is not a measurement of viability, barrier function or drug response, and it is not for clinical or regulatory decisions.
-- A new microscope or camera needs local reference frames: without them AUROC drops by about ten points. Run in review-only mode first; the report gives the labelling cost of repairing it.
+- A new microscope or camera needs local reference frames: without them AUROC drops by six to eight points. Run in review-only mode first; the report gives the labelling cost of repairing it.
 - Thresholds met their targets on held-out dates of this dataset. That is evidence, not a guarantee; re-check after any change of instrument, protocol or cell line.
 
 ## Data, licences and citation

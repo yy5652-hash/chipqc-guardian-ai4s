@@ -36,9 +36,9 @@ for item in meta["frames"]:
     frames.append({**item, "thumb": src.stem + "_thumb.jpg", "reference": {"p_good": round(a.p_good, 6), "decision": a.decision, "reasons": a.reasons,
                                                                           "acquisition": {k: round(v, 6) for k, v in a.acquisition.items()}}})
 ev = g.spec.get("evaluation") or {}
-web = {"name": g.spec["name"], "created_utc": g.spec["created_utc"], "held_out_dates": g.spec["held_out_dates"], "backbone": "DINOv2 ViT-S/14 with registers (frozen)",
+web = {"name": g.spec["name"], "created_utc": g.spec["created_utc"], "held_out_dates": g.spec["held_out_dates"], "backbone": "DINOv2 ViT-S/14 with registers (frozen), patch descriptors from its last four blocks, unit-length frame embedding",
        "frame_size": g.spec["frame_size"], "tile": g.spec["tile"], "grid": g.spec["grid"], "thresholds": g.spec["thresholds"], "default_error_target": str(g.spec["default_error_target"]),
-       "acquisition_limits": g.limits, "note": meta["note"], "frames": frames,
+       "head": {"embedding_norm": g.norm, "cell_bias": g.b, "platt": list(g.platt)}, "acquisition_limits": g.limits, "note": meta["note"], "frames": frames,
        "evaluation": {"auroc": ev.get("auroc"), "frames": ev.get("frames"), "dates": ev.get("dates"), "system": ev.get("system")}}
 (DOCS / "model/web_model.json").write_text(json.dumps(web, indent=1))
 (DOCS / ".nojekyll").write_text("")
