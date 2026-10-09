@@ -135,7 +135,7 @@ def typeset(markdown: str, out: Path):
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
     from reportlab.platypus.doctemplate import ActionFlowable
-    from reportlab.platypus import BaseDocTemplate, CondPageBreak, Frame, Image, KeepTogether, PageTemplate, Paragraph, Preformatted, Spacer, Table, TableStyle
+    from reportlab.platypus import BaseDocTemplate, CondPageBreak, Frame, Image, KeepTogether, PageBreak, PageTemplate, Paragraph, Preformatted, Spacer, Table, TableStyle
 
     fonts = "/System/Library/Fonts/Supplemental/"
     files = (("Body", "Arial.ttf"), ("Body-Bold", "Arial Bold.ttf"), ("Body-Italic", "Arial Italic.ttf"), ("Mono", "Courier New.ttf"))
@@ -238,6 +238,8 @@ def typeset(markdown: str, out: Path):
 
     def heading(text, level):
         # a heading needs room for itself and the first lines of what follows; the text below it may then break across pages
+        if text.startswith("Appendix"):         # the appendix starts on a page of its own
+            story.append(PageBreak())
         if not (story and is_heading(story[-1])):
             story.append(CondPageBreak(84))     # the document adjusts this height to what actually follows
             story[-1].whole_section = text == "References"

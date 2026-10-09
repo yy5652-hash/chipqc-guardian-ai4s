@@ -257,6 +257,8 @@ A laboratory imaging OoC chips can run the tool on each acquisition folder as it
 | 15 % | {{ int(1000 * S15.passed_automatically) }} | {{ pct1(S15.bad_among_passed) }} | {{ minutes(1000 * S15.passed_automatically, 10) }} min | {{ minutes(1000 * S15.passed_automatically, 30) }} min |
 | 20 % | {{ int(1000 * S20.passed_automatically) }} | {{ pct1(S20.bad_among_passed) }} | {{ minutes(1000 * S20.passed_automatically, 10) }} min | {{ minutes(1000 * S20.passed_automatically, 30) }} min |
 
+![Left: what happens to 1,000 frames at each error target, every frame scored on an acquisition date the model never saw. Right: minutes of looking avoided per 1,000 frames against the time a look takes; the dataset does not measure that time, and the shaded band is the 10–30 s range assumed in the text.](figures/fig_workload.png)
+
 **Errors.** We cannot claim that the gate makes fewer mistakes than a person: the dataset has one label per frame and no second rater, so the human error rate is unknown. What changes is that the automatic part has a measured error rate, written into every record, where today there is none. The frames that still need a person also arrive in a useful order: within the review queue at a 10 % target the score still separates good from bad (AUROC {{ f2(S10.review_queue_auroc) }}), so a reviewer who only has time for the first third of the queue meets {{ pct(S10.bad_found_in_first_third_of_queue) }} of its bad frames rather than a third of them.
 
 **Time points that would be lost.** A frame that is unusable but noticed only at analysis cannot be taken again, because the culture has moved on: the time point is lost. The acquisition gate flags {{ pct(S10.sent_to_reacquire) }} of frames while the chip is still on the stage, experts had labelled {{ pct(S10.bad_among_reacquire) }} of those bad (against 44 % of all frames), and re-imaging costs one more exposure.
@@ -290,14 +292,14 @@ Per-expert labels to measure the agreement ceiling; chip and channel identifiers
 ```
 git clone https://github.com/yy5652-hash/chipqc-guardian-ai4s && cd chipqc-guardian-ai4s
 python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
-python evaluate.py                 # every number in this report (2 min, CPU)
+python evaluate.py                 # every number in this report
 python scripts/make_figures.py     # every chart
 python scripts/build_report.py     # this report
 python inference.py examples/      # the released model on the bundled frames
 streamlit run app.py               # the review console
 ```
 
-`evaluate.py` needs no images: the repository ships the embeddings of all 3,072 frames for every representation in section 5.3 and the acquisition descriptors. `scripts/reproduce_from_images.sh` rebuilds those files from the Zenodo archive (download, checksum, manifest, embeddings, descriptors), which takes about 15 minutes on a laptop GPU. The report itself is generated: `scripts/build_report.py` fills this text from `results/*.json`, so a number cannot drift from the result file that produced it. The test suite (`pytest`) covers the date folds, the acquisition rules, the exactness of the evidence map, the threshold rule and the nested protocol; `scripts/check_web_demo.py` checks the browser demo against the Python reference. We also verified the released requirements file in a fresh virtual environment: the tests pass and `evaluate.py` returns the same headline AUROC to every digit.
+`evaluate.py` needs no images: the repository ships the embeddings of all 3,072 frames for every representation in section 5.3 and the acquisition descriptors. `scripts/reproduce_from_images.sh` rebuilds those files from the Zenodo archive (download, checksum, manifest, embeddings, descriptors), which takes about 15 minutes on a laptop GPU. The full evaluation takes about 2 minutes on an Apple-silicon laptop and much longer on a small cloud machine; on 4 x86 cores the headline analysis alone (`python evaluate.py --only headline`) took about 5 minutes. The report itself is generated: `scripts/build_report.py` fills this text from `results/*.json`, so a number cannot drift from the result file that produced it. The test suite (`pytest`) covers the date folds, the acquisition rules, the exactness of the evidence map, the threshold rule and the nested protocol; `scripts/check_web_demo.py` checks the browser demo against the Python reference. We also verified the released requirements file in a fresh virtual environment: the tests pass and `evaluate.py` returns the same headline AUROC to every digit, on macOS and again on a Linux cloud machine.
 
 | External asset | Use | Licence |
 |---|---|---|

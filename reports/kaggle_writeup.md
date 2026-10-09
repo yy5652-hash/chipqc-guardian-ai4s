@@ -2,6 +2,12 @@
 
 **Submission category: End-to-End System**
 
+## 中文摘要
+
+器官芯片培养在给药、染色或测量之前，都要有人看明场图像，判断培养是否可用。这个判断靠肉眼，因人而异，而且几乎不留记录。**ChipQC Guardian** 把它变成有记录、可核查的一步：每一帧图像得到三种结果之一，并附上依据。**PASS** 表示无需人工查看、直接使用；**REACQUIRE** 表示这不是有效观测，应趁芯片还在显微镜上重拍；**REVIEW** 表示交给人判断，最可疑的排在最前。
+
+我们在公开的器官芯片图像数据集（3,072 帧，6 种细胞系，59 个采集日期）上按**整个采集日期**留出测试，因为同一天拍摄的图像彼此并不独立。模型 AUROC 为 **0.852**（95% 区间 0.821–0.883）。在 10% 的错误目标下，18% 的帧自动放行，其中专家判为不良的占 8.6%；15% 的帧在拍摄当时就被要求重拍。每个判断都写入审计记录（结果、校准概率、采集指标、模型版本、图像哈希），可以作为器官芯片数据资产和数字孪生的数据质量层。以下为英文详述。
+
 ## Demo video
 
 - YouTube: https://youtu.be/TDwHyMEzVOM (also the first item of the media gallery above)
@@ -14,7 +20,7 @@ A 3½-minute film made from the real system and the real data: every frame of th
 
 https://github.com/yy5652-hash/chipqc-guardian-ai4s
 
-Source, released model, embeddings of all 3,072 frames, result files, figures, tests and the scripts that regenerate every number. `python evaluate.py` reproduces the full evaluation in two minutes on a CPU without downloading any images.
+Source, released model, embeddings of all 3,072 frames, result files, figures, tests and the scripts that regenerate every number. `python evaluate.py` reproduces the full evaluation without downloading any images: about two minutes on an Apple-silicon laptop, longer on a small cloud machine (`--only headline` reproduces the headline numbers in about five minutes on 4 x86 cores).
 
 ## Project summary
 
@@ -26,7 +32,7 @@ On the public Organ-on-a-Chip Image Dataset (3,072 frames, six cell lines, 59 ac
 
 ## Technical report
 
-[ChipQC Guardian technical report (PDF, 16 pages)](https://github.com/yy5652-hash/chipqc-guardian-ai4s/blob/main/ChipQC_Guardian_Technical_Report.pdf), also attached to this writeup under Project Files. It covers the problem, data and compliance, system design, experimental protocol, all results, reliability analysis, impact, reproduction and the licences of every external asset. Its main results, the reasons behind the design and the limits are summarised here.
+[ChipQC Guardian technical report (PDF, 18 pages)](https://github.com/yy5652-hash/chipqc-guardian-ai4s/blob/main/ChipQC_Guardian_Technical_Report.pdf), also attached to this writeup under Project Files. It covers the problem, data and compliance, system design, experimental protocol, all results, reliability analysis, impact, reproduction and the licences of every external asset. Its main results, the reasons behind the design and the limits are summarised here.
 
 ### Results at a glance
 
@@ -46,13 +52,14 @@ All numbers are for acquisition dates the model never saw; intervals resample da
 
 ### Why this problem
 
-OoC platforms are moving from single experiments to studies with hundreds of chips, and regulators now accept non-animal methods in preclinical testing. Quality control has not kept up: whether a culture is fit to analyse is still a personal judgement that leaves no trace in the data. A wrong "yes" contaminates every downstream measurement and every dataset later used to train models or digital twins; a wrong "no" discards days of culture. A gate that states its own error rate, shows its evidence and writes an audit record makes that judgement reproducible and turns the quality state of each frame into metadata that travels with the image.
+OoC platforms are moving from single experiments to studies with hundreds of chips, and regulators now accept non-animal methods in preclinical testing. Quality control has not kept up: whether a culture is fit to analyse is still a personal judgement that leaves no trace in the data. A wrong "yes" contaminates every downstream measurement and every dataset later used to train models or digital twins; a wrong "no" discards days of culture. A gate that states its own error rate, shows its evidence and writes an audit record makes that judgement reproducible and turns the quality state of each frame into metadata that travels with the image. At a 10 % target about 185 frames per 1,000 need no look; at an assumed 10 to 30 seconds per look that is 31 to 92 minutes of looking avoided per 1,000 frames, and 78 to 235 at a 20 % target (report, section 7.1). The audit record is also the quality layer that an organ-on-a-chip data asset, and a digital twin trained on it, needs first (section 7.2).
 
 ### What is technically new
 
 - **The whole frame at resolution.** Keeping the entire field of view at 1344 px instead of a 224 px crop is worth 0.086 AUROC with the same backbone.
 - **Self-supervised features for robustness.** DINOv2 patch descriptors transfer to unseen cell lines without loss and to an unseen camera better than any supervised backbone we tested.
 - **Exact evidence maps.** The explanation is the model's own arithmetic, not a post-hoc approximation.
+- **Two stages for two kinds of "bad".** A frame that is not a usable observation goes back to the microscope; a culture that looks poor goes to a person. The experts' "bad" label mixes both, and they call for different actions.
 - **Validation that matches how the data were produced.** Dates are held out, tuning stays inside training dates, intervals resample dates. The same model scores 0.918 AUROC on a random split of the images and 0.852 on held-out dates.
 - **A decision rule that states its own error rate**, with a safety margin, and two documented negative results (no automatic rejection, no 5 % target).
 

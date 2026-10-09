@@ -55,13 +55,14 @@ The [browser demo]({{ links.demo }}) (`docs/`) runs the same pipeline with ONNX 
 ## Reproduce
 
 ```bash
-python evaluate.py                   # every reported number, from the released features: 2 minutes on a CPU
+python evaluate.py                   # every reported number, from the released features
+python evaluate.py --only headline   # just the headline numbers
 python scripts/make_figures.py       # every chart
 python scripts/build_report.py       # the report, README and model card, filled from results/*.json
 pytest -q                            # the unit tests
 ```
 
-`evaluate.py` needs no images: `features/` holds the embeddings of all 3,072 frames for every representation in the comparison, and the acquisition descriptors. To rebuild those from the raw data (6.7 GB download, about 15 minutes on a laptop GPU):
+The full evaluation takes about 2 minutes on an Apple-silicon laptop and much longer on a small cloud machine: on 4 x86 cores the headline analysis alone took about 5 minutes and the full run more than 40. `evaluate.py` needs no images: `features/` holds the embeddings of all 3,072 frames for every representation in the comparison, and the acquisition descriptors. To rebuild those from the raw data (6.7 GB download, about 15 minutes on a laptop GPU):
 
 ```bash
 bash scripts/reproduce_from_images.sh

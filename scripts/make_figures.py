@@ -147,6 +147,34 @@ def fig_risk_coverage(man):
     save(fig, "fig_risk_coverage")
 
 
+def fig_workload():
+    so = load("system_outcomes")
+    targets = ("0.1", "0.15", "0.2")
+    fig, (a, b) = plt.subplots(1, 2, figsize=(9.2, 2.9), gridspec_kw={"wspace": 0.32, "width_ratios": [1.25, 1]})
+    y = np.arange(len(targets))[::-1]
+    left = np.zeros(len(targets))
+    for key, text, colour in (("passed_automatically", "PASS: no look", AQUA), ("sent_to_reacquire", "REACQUIRE", ORANGE), ("left_for_a_person", "REVIEW", YELLOW)):
+        v = np.array([1000 * so[t]["summary"][key] for t in targets])
+        a.barh(y, v, left=left, height=0.5, color=colour, linewidth=0, label=text)
+        for yy, l, w in zip(y, left, v):
+            a.text(l + w / 2, yy, f"{w:.0f}", ha="center", va="center", fontsize=8.5, color=INK)
+        left += v
+    a.set_yticks(y, [f"target {float(t):.0%}" for t in targets]); a.tick_params(axis="y", length=0); a.grid(axis="y", visible=False)
+    a.set_xlim(0, 1000); a.set_xlabel("frames per 1,000, each scored on a date the model never saw")
+    a.set_title("Where 1,000 frames go"); a.legend(loc="upper center", bbox_to_anchor=(0.5, -0.24), ncol=3)
+    s = np.linspace(0, 40, 81)
+    b.axvspan(10, 30, color=GRID, alpha=0.6, linewidth=0)
+    b.text(20, 3, "range assumed\nin the text", ha="center", va="bottom", fontsize=7.5, color=INK2)
+    for t, alpha in zip(targets, (0.45, 0.7, 1.0)):     # one hue, darker for the looser target that passes more
+        passed = 1000 * so[t]["summary"]["passed_automatically"]
+        b.plot(s, passed * s / 60, color=BLUE, alpha=alpha)
+        b.text(40.8, passed * 40 / 60, f"target {float(t):.0%}", va="center", fontsize=8, color=INK2)
+    b.set_xlim(0, 40); b.set_ylim(0, None)
+    b.set_xlabel("seconds a look takes (assumed, not measured)"); b.set_ylabel("minutes of looking avoided\nper 1,000 frames")
+    b.set_title("Time saved, under a stated assumption")
+    save(fig, "fig_workload")
+
+
 def fig_cell_lines():
     u = {k: v for k, v in load("unseen_cell_line").items() if not k.startswith("_")}
     names = sorted(u, key=lambda k: -u[k]["frames"])
@@ -294,7 +322,7 @@ if __name__ == "__main__":
     a = ap.parse_args()
     man = load_manifest(ROOT / "data/manifest.csv")
     charts = {"system": fig_system, "protocols": fig_protocols, "representations": fig_representations, "roc": lambda: fig_roc_calibration(man),
-              "risk": lambda: fig_risk_coverage(man), "cell_lines": fig_cell_lines, "camera": fig_camera, "runs": lambda: fig_label_runs(man), "acquisition": fig_acquisition}
+              "risk": lambda: fig_risk_coverage(man), "workload": fig_workload, "cell_lines": fig_cell_lines, "camera": fig_camera, "runs": lambda: fig_label_runs(man), "acquisition": fig_acquisition}
     for name, fn in charts.items():
         if not a.only or a.only == name:
             fn()
