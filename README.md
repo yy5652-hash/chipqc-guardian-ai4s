@@ -32,7 +32,7 @@ Measured on the public [Organ-on-a-Chip Image Dataset](https://doi.org/10.5281/z
 | At a 10 % target: passed automatically / bad among passed | 27 % / 9.5 % |
 | At a 20 % target: passed automatically / bad among passed | 52 % / 17.5 % |
 | Sent back for re-acquisition / of those, labelled bad by experts | 15 % / 66 % |
-| Seconds per frame, laptop GPU / CPU | 0.26 / 0.86 |
+| Seconds per frame, Apple-silicon GPU / CPU | 0.26 / 0.86 |
 
 Two things the system deliberately does not do: automatic rejection (at a 10 % target, 12 % of the frames it would discard were good) and a 5 % pass target, which this version meets only narrowly (4.6 % bad among the 12 % of frames it passes) and therefore does not offer. Both are reported in the [technical report](ChipQC_Guardian_Technical_Report.pdf), sections 5.4 and 6.
 
@@ -65,7 +65,7 @@ python scripts/build_report.py       # the report, README and model card, filled
 pytest -q                            # the unit tests
 ```
 
-The full evaluation takes about 3 minutes on an Apple-silicon desktop and much longer on a small cloud machine (tens of minutes on 4 x86 cores); `--only headline` is the quick check there. `evaluate.py` needs no images: `features/` holds the embeddings of all 3,072 frames for every representation in the comparison, and the acquisition descriptors. To rebuild those from the raw data (6.7 GB download, about 15 minutes on a laptop GPU):
+The full evaluation takes about 3 minutes on an Apple-silicon desktop and much longer on a small cloud machine (tens of minutes on 4 x86 cores); `--only headline` is the quick check there. `evaluate.py` needs no images: `features/` holds the embeddings of all 3,072 frames for every representation in the comparison, and the acquisition descriptors. To rebuild those from the raw data (6.7 GB download, about 20 minutes on an Apple-silicon GPU):
 
 ```bash
 bash scripts/reproduce_from_images.sh

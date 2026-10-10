@@ -49,7 +49,7 @@ All numbers are for acquisition dates the model never saw; intervals resample da
 | Passed automatically at a 10 % / 20 % target | {{ pct(S10.passed_automatically) }} / {{ pct(S20.passed_automatically) }} |
 | Bad among passed at a 10 % / 20 % target | {{ pct1(S10.bad_among_passed) }} / {{ pct1(S20.bad_among_passed) }} |
 | Controlled faults caught by the acquisition gate | defocus 4 px {{ pct(DS.defocus[2]) }}, 20 px motion {{ pct(DS.motion_streak[2]) }}, 40 % occlusion {{ pct(DS.occlusion[2]) }} |
-| Time per frame | {{ RT.gpu_s }} s on a laptop GPU, {{ RT.cpu_s }} s on a laptop CPU |
+| Time per frame | {{ RT.gpu_s }} s on an Apple-silicon GPU, {{ RT.cpu_s }} s on its CPU |
 
 ### Why this problem
 

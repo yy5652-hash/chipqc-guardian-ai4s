@@ -49,7 +49,7 @@ All numbers are for acquisition dates the model never saw; intervals resample da
 | Passed automatically at a 10 % / 20 % target | 27 % / 52 % |
 | Bad among passed at a 10 % / 20 % target | 9.5 % / 17.5 % |
 | Controlled faults caught by the acquisition gate | defocus 4 px 100 %, 20 px motion 99 %, 40 % occlusion 100 % |
-| Time per frame | 0.26 s on a laptop GPU, 0.86 s on a laptop CPU |
+| Time per frame | 0.26 s on an Apple-silicon GPU, 0.86 s on its CPU |
 
 ### Why this problem
 

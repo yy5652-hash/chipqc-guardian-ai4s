@@ -32,7 +32,7 @@ Measured on the public [Organ-on-a-Chip Image Dataset](https://doi.org/10.5281/z
 | At a 10 % target: passed automatically / bad among passed | {{ pct(S10.passed_automatically) }} / {{ pct1(S10.bad_among_passed) }} |
 | At a 20 % target: passed automatically / bad among passed | {{ pct(S20.passed_automatically) }} / {{ pct1(S20.bad_among_passed) }} |
 | Sent back for re-acquisition / of those, labelled bad by experts | {{ pct(S10.sent_to_reacquire) }} / {{ pct(S10.bad_among_reacquire) }} |
-| Seconds per frame, laptop GPU / CPU | {{ RT.gpu_s }} / {{ RT.cpu_s }} |
+| Seconds per frame, Apple-silicon GPU / CPU | {{ RT.gpu_s }} / {{ RT.cpu_s }} |
 
 Two things the system deliberately does not do: automatic rejection (at a 10 % target, {{ pct(S10.automatic_fail_if_it_existed.good_among_failed) }} of the frames it would discard were good) and a 5 % pass target, which this version meets only narrowly ({{ pct1(S05.bad_among_passed) }} bad among the {{ pct(S05.passed_automatically) }} of frames it passes) and therefore does not offer. Both are reported in the [technical report](ChipQC_Guardian_Technical_Report.pdf), sections 5.4 and 6.
 
@@ -65,7 +65,7 @@ python scripts/build_report.py       # the report, README and model card, filled
 pytest -q                            # the unit tests
 ```
 
-The full evaluation takes about 3 minutes on an Apple-silicon desktop and much longer on a small cloud machine (tens of minutes on 4 x86 cores); `--only headline` is the quick check there. `evaluate.py` needs no images: `features/` holds the embeddings of all 3,072 frames for every representation in the comparison, and the acquisition descriptors. To rebuild those from the raw data (6.7 GB download, about 15 minutes on a laptop GPU):
+The full evaluation takes about 3 minutes on an Apple-silicon desktop and much longer on a small cloud machine (tens of minutes on 4 x86 cores); `--only headline` is the quick check there. `evaluate.py` needs no images: `features/` holds the embeddings of all 3,072 frames for every representation in the comparison, and the acquisition descriptors. To rebuild those from the raw data (6.7 GB download, about 20 minutes on an Apple-silicon GPU):
 
 ```bash
 bash scripts/reproduce_from_images.sh
