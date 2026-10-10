@@ -30,6 +30,8 @@ An acquisition gate measures five physical properties of the image. A culture-qu
 
 On the public Organ-on-a-Chip Image Dataset (3,072 frames, six cell lines, 59 acquisition dates) we hold out **whole acquisition dates**, because frames from one day are not independent. The model reaches an AUROC of **0.880** (95 % interval 0.851–0.907); our previous version scored 0.852 under the same protocol, and on the frozen test dates of our first version the model scores 0.885 against that version's 0.772. At a 10 % target, 27 % of frames pass with 9.5 % bad among them and 15 % are sent back for re-imaging. A cell line withheld from training loses at most 0.05 AUROC; a different camera loses six to eight points, until local labels are added; automatic rejection is not supported by the data. We report all three. The value is a quality decision with a stated error rate, visible evidence and an audit record that travels with the image.
 
+![Four frames from acquisition dates the model never saw, with their evidence maps. Blue pulls the score towards good, red towards bad; each map averages exactly to the frame's score.](https://raw.githubusercontent.com/yy5652-hash/chipqc-guardian-ai4s/f41c4f4dda6b842049af035fc1bfa8fff2a71d16/reports/figures/fig_evidence.jpg)
+
 ## Technical report
 
 [ChipQC Guardian technical report (PDF, 19 pages)](https://github.com/yy5652-hash/chipqc-guardian-ai4s/blob/main/ChipQC_Guardian_Technical_Report.pdf), also attached to this writeup under Project Files. It covers the problem, data and compliance, system design, experimental protocol, all results, reliability analysis, impact, reproduction and the licences of every external asset. Its main results, the reasons behind the design and the limits are summarised here.
@@ -51,9 +53,13 @@ All numbers are for acquisition dates the model never saw; intervals resample da
 | Controlled faults caught by the acquisition gate | defocus 4 px 100 %, 20 px motion 99 %, 40 % occlusion 100 % |
 | Time per frame | 0.26 s on an Apple-silicon GPU, 0.86 s on its CPU |
 
+![AUROC on held-out acquisition dates for every representation tried, with 95 % intervals over dates. Every row uses the released head except the two marked without normalisation.](https://raw.githubusercontent.com/yy5652-hash/chipqc-guardian-ai4s/f41c4f4dda6b842049af035fc1bfa8fff2a71d16/reports/figures/fig_representations.png)
+
 ### Why this problem
 
 OoC platforms are moving from single experiments to studies with hundreds of chips, and regulators now accept non-animal methods in preclinical testing. Quality control has not kept up: whether a culture is fit to analyse is still a personal judgement that leaves no trace in the data. A wrong "yes" contaminates every downstream measurement and every dataset later used to train models or digital twins; a wrong "no" discards days of culture. A gate that states its own error rate, shows its evidence and writes an audit record makes that judgement reproducible and turns the quality state of each frame into metadata that travels with the image. At a 10 % target about 274 frames per 1,000 need no look; at an assumed 10 to 30 seconds per look that is 46 to 137 minutes of looking avoided per 1,000 frames, and 86 to 258 at a 20 % target (report, section 7.1). The audit record is also the quality layer that an organ-on-a-chip data asset, and a digital twin trained on it, needs first (section 7.2).
+
+![Left: where 1,000 frames go at each error target, every frame scored on a date the model never saw. Right: minutes of looking avoided per 1,000 frames against the time a look takes; the shaded band is the 10–30 s range assumed in the text.](https://raw.githubusercontent.com/yy5652-hash/chipqc-guardian-ai4s/f41c4f4dda6b842049af035fc1bfa8fff2a71d16/reports/figures/fig_workload.png)
 
 ### What is technically new
 
@@ -74,6 +80,8 @@ One laboratory and one chip family; labels are expert judgements without per-rat
 https://yy5652-hash.github.io/chipqc-guardian-ai4s/
 
 The released pipeline running entirely in the visitor's browser (ONNX Runtime Web; no login, nothing uploaded): pick one of nine real frames from two acquisition dates the model never saw, or open your own image, and get the outcome, the evidence map and the acquisition descriptors. On the bundled frames the browser result matches the Python reference to within 0.000003 in P(good). The repository also contains a local review console (`streamlit run app.py`) and a command-line tool.
+
+![One card of the review console: the frame, its evidence map, the acquisition descriptors and the most similar labelled reference frames.](https://raw.githubusercontent.com/yy5652-hash/chipqc-guardian-ai4s/f41c4f4dda6b842049af035fc1bfa8fff2a71d16/reports/figures/console_frame_review.png)
 
 ## Team
 
